@@ -9,7 +9,6 @@ typedef struct {
 class Scene {
 	public:
 	VertexDescriptor *VD;	
-	DescriptorSetLayout *DSL;
 	
 	BaseProject *BP;
 
@@ -31,10 +30,9 @@ class Scene {
 	Instance *I;
 	std::unordered_map<std::string, int> InstanceIds;
 
-	void init(BaseProject *_BP, VertexDescriptor *VD, DescriptorSetLayout *_DSL, 
+	void init(BaseProject *_BP, VertexDescriptor *VD, DescriptorSetLayout &DSL, 
 			  Pipeline &P, std::string file) {
 		BP = _BP;
-		DSL = _DSL;
 		// Models, textures and Descriptors (values assigned to the uniforms)
 		nlohmann::json js;
 		std::ifstream ifs("models/scene.json");
@@ -99,22 +97,14 @@ std::cout << k << "\t" << is[k]["id"] << ", " << is[k]["model"] << "(" << MeshId
 	}
 
 
-	void pipelinesAndDescriptorSetsInit() {
+	void pipelinesAndDescriptorSetsInit(DescriptorSetLayout &DSL) {
 		for(int i = 0; i < InstanceCount; i++) {
 			DS[i] = new DescriptorSet();
-
-/*			std::vector<DescriptorSetElement> E;
-			E.resize(DSL->Bindings.size());
-			for(int j=0; j < E.size(); j++) {
-				E[j].binding = DSL->Bindings[j].binding;
-				E[j].type = DSL->Bindings[j].DSEtype;
-				E[j].size = DSL->Bindings[j].size;
-				if(E[j].type == TEXTURE) {
-					E[j].tex = T[I[i].Tid];
-				}
-			}*/
-			Texture *TA[] = {T[I[i].Tid]};
-			DS[i]->init(BP, DSL, TA);
+			DS[i]->init(BP, &DSL, {
+					{0, UNIFORM, sizeof(UniformBufferObject), nullptr},
+					{1, TEXTURE, 0, T[I[i].Tid]},
+					{2, UNIFORM, sizeof(GlobalUniformBufferObject), nullptr}
+				});
 		}
 	}
 	
@@ -151,12 +141,9 @@ std::cout << k << "\t" << is[k]["id"] << ", " << is[k]["model"] << "(" << MeshId
 	
     void populateCommandBuffer(VkCommandBuffer commandBuffer, int currentImage, Pipeline &P) {
 		for(int i = 0; i < InstanceCount; i++) {
-//std::cout << "Drawing Instance " << i << "\n";
 			M[I[i].Mid]->bind(commandBuffer);
-//std::cout << "Binding DS: " << DS[i] << "\n";
 			DS[i]->bind(commandBuffer, P, 0, currentImage);
-
-//std::cout << "Draw Call\n";						
+						
 			vkCmdDrawIndexed(commandBuffer,
 					static_cast<uint32_t>(M[I[i].Mid]->indices.size()), 1, 0, 0, 0);
 		}
