@@ -34,19 +34,19 @@ class FinalProject : public BaseProject {
 	protected:
 	
 	// Descriptor Layouts ["classes" of what will be passed to the shaders]
-	DescriptorSetLayout DSL;
+	DescriptorSetLayout DSLPlane;
 
 	// Vertex formats
-	VertexDescriptor VD;
+	VertexDescriptor VDPlane;
 
 	// Pipelines [Shader couples]
-	Pipeline P;
+	Pipeline PPlane;
 
 	// Models
 	Model largePlaneModel;
 
 	// Descriptor sets
-	DescriptorSet DS;
+	DescriptorSet DSPlane;
 	
 	// Textures
 	Texture planeTexture;
@@ -72,11 +72,6 @@ class FinalProject : public BaseProject {
 	    windowResizable = GLFW_TRUE;
 	    initialBackgroundColor = {0.0f, 0.85f, 1.0f, 1.0f};
 
-	    // Descriptor pool sizes
-	    uniformBlocksInPool = 10; // Increase this number as needed
-	    texturesInPool = 5; // Increase this number as needed
-	    setsInPool = 5; // Increase this number as needed
-
 	    Ar = 4.0f / 3.0f;
 	}
 	
@@ -87,31 +82,31 @@ class FinalProject : public BaseProject {
 	
 	void localInit() {
 		// Descriptor Layouts [what will be passed to the shaders]
-		DSL.init(this, {
+		DSLPlane.init(this, {
 			{0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS},
 			{1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT},
 			{2, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS}
 		});
 
 		// Vertex descriptors
-		VD.init(this, {
-			{0, sizeof(Vertex), VK_VERTEX_INPUT_RATE_VERTEX}
-		}, {
-			{0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, pos),
-			sizeof(glm::vec3), POSITION},
-			{0, 1, VK_FORMAT_R32G32_SFLOAT, offsetof(Vertex, UV),
-			sizeof(glm::vec2), UV},
-			{0, 2, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, norm),
-			sizeof(glm::vec3), NORMAL}
-		});
+		VDPlane.init(this, {
+				{0, sizeof(Vertex), VK_VERTEX_INPUT_RATE_VERTEX}
+			}, {
+				{0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, pos),
+					sizeof(glm::vec3), POSITION},
+				{0, 1, VK_FORMAT_R32G32_SFLOAT, offsetof(Vertex, UV),
+					sizeof(glm::vec2), UV},
+				{0, 2, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, norm),
+					sizeof(glm::vec3), NORMAL}
+			});
 
 		// Pipelines [Shader couples]
-		P.init(this, &VD, "shaders/PhongVert.spv", "shaders/PhongFrag.spv", {&DSL});
-		P.setAdvancedFeatures(VK_COMPARE_OP_LESS_OR_EQUAL, VK_POLYGON_MODE_FILL,
+		PPlane.init(this, &VDPlane, "shaders/PhongVert.spv", "shaders/PhongFrag.spv", {&DSLPlane});
+		PPlane.setAdvancedFeatures(VK_COMPARE_OP_LESS_OR_EQUAL, VK_POLYGON_MODE_FILL,
  							    VK_CULL_MODE_BACK_BIT, false);
 
 		// Models, textures and Descriptors (values assigned to the uniforms)
-		largePlaneModel.init(this, &VD, "models/LargePlane.obj", OBJ);
+		largePlaneModel.init(this, &VDPlane, "models/LargePlane.obj", OBJ);
 
 		// Initialize the world matrix and color for the large plane model
 		Wm = glm::mat4(1.0f);
@@ -122,30 +117,24 @@ class FinalProject : public BaseProject {
 		
 		// Initialize text maker
 		txt.init(this, &outText);
-
-		// Init local variables
 	}
 	
 	void pipelinesAndDescriptorSetsInit() {
 		// Create pipeline
-		P.create();
+		PPlane.create();
 
 		// Define the data set
-		DS.init(this, &DSL, {
-			{0, UNIFORM, sizeof(UniformBufferObject), nullptr},
-			{1, TEXTURE, 0, &planeTexture},
-			{2, UNIFORM, sizeof(GlobalUniformBufferObject), nullptr}
-		});
+		DSPlane.init(this, &DSLPlane, {&planeTexture});
 		
 		txt.pipelinesAndDescriptorSetsInit();
 	}
 
 	void pipelinesAndDescriptorSetsCleanup() {
 		// Cleanup pipeline
-		P.cleanup();
+		PPlane.cleanup();
 
 		// Cleanup descriptor set
-		DS.cleanup();
+		DSPlane.cleanup();
 		
 		txt.pipelinesAndDescriptorSetsCleanup();
 	}
@@ -158,21 +147,21 @@ class FinalProject : public BaseProject {
 		largePlaneModel.cleanup();
 		
 		// Cleanup descriptor set layout
-		DSL.cleanup();
+		DSLPlane.cleanup();
 		
 		// Destroy pipeline
-		P.destroy();
+		PPlane.destroy();
 		
 		txt.localCleanup();
 	}
 	
 	void populateCommandBuffer(VkCommandBuffer commandBuffer, int currentImage) {
 		// Bind the pipeline
-		P.bind(commandBuffer);
+		PPlane.bind(commandBuffer);
 		
 		// Bind the model
 		largePlaneModel.bind(commandBuffer);
-		DS.bind(commandBuffer, P, 0, currentImage);
+		DSPlane.bind(commandBuffer, PPlane, 0, currentImage);
 					
 		// Draw the model
 		vkCmdDrawIndexed(commandBuffer,
@@ -227,8 +216,8 @@ class FinalProject : public BaseProject {
 		gubo.eyePos = CamPos;
 
 		// Map the uniforms
-		DS.map(currentImage, &ubo, sizeof(ubo), 0);
-		DS.map(currentImage, &gubo, sizeof(gubo), 2);
+		DSPlane.map(currentImage, &ubo, 0);
+		DSPlane.map(currentImage, &gubo, 2);
 	}
 };
 
