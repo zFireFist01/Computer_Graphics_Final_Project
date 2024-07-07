@@ -155,7 +155,7 @@ protected:
 
         // Models, textures and Descriptors (values assigned to the uniforms)
         largePlaneModel.init(this, &VDPlane, "models/Water.obj", OBJ);
-        battleshipModel.init(this, &VDBattleship, "models/Warships/Battleships.obj", OBJ);
+        battleshipModel.init(this, &VDBattleship, "models/Warships/Battleship.obj", OBJ);
 
         // Initialize the world matrix and color for the large plane model
         Wm_Plane = glm::mat4(1.0f);
@@ -300,7 +300,7 @@ protected:
         DSPlane.map(currentImage, &gubo, sizeof(gubo), 2);
 
         // Update uniforms for the battleship
-		ubo.mMat = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 3.0f, 0.0f)); // Sposta la nave in alto
+		ubo.mMat = glm::mat4(1.0f);
 		ubo.mvpMat = ViewPrj * ubo.mMat;
 		ubo.nMat = glm::inverse(glm::transpose(ubo.mMat));
 		ubo.color = MCol_Battleship;
