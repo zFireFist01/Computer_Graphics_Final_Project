@@ -38,7 +38,7 @@ struct Vertex {
 
 const std::vector<Asset> AssetVector = {
     {"models/LargePlane.obj", "textures/water.png", {0.0f, 0.0f, 0.0f}, 1.0f, {0.0f, 0.0f, 0.0f}},
-    {"models/Warships/10619_Battleship.obj", "textures/metal.jpeg", {0.0f, 0.0f, 0.0f}, 1.0f, {0.0f, 0.0f, 0.0f}}
+    {"models/Warships/10619_Battleship.obj", "textures/BattleshipTexture.jpeg", {0.0f, 0.0f, 0.0f}, 1.0f, {0.0f, 0.0f, 0.0f}}
 };
 
 const int numAssets = AssetVector.size();
@@ -167,7 +167,7 @@ protected:
 
         // Create the textures
         planeTexture.init(this, "textures/water.png");
-        battleshipTexture.init(this, "textures/metal.jpeg");
+        battleshipTexture.init(this, "textures/BattleshipTexture.jpeg");
 
         // Initialize text maker
         txt.init(this, &outText);
