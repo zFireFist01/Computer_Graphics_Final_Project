@@ -57,6 +57,11 @@ class FinalProject : public BaseProject {
 	
 	TextMaker txt;
 	
+
+
+	/**
+	 * Camera parameters presi dall'assignment 2
+	 */
 	// Camera parameters
 	glm::vec3 CamPos = glm::vec3(0.0, 1.5, 7.0);
 	float CamAlpha = 0.0f;
@@ -64,6 +69,9 @@ class FinalProject : public BaseProject {
 	float Ar;
 	bool WireFrame = false;
 
+	/**
+	 * Funzione per settare dimensione, titolo e Aspect Ratio della finestra di gioco
+	 */
 	void setWindowParameters() {
 	    // window size, title and initial background
 	    windowWidth = 800;
@@ -72,9 +80,25 @@ class FinalProject : public BaseProject {
 	    windowResizable = GLFW_TRUE;
 	    initialBackgroundColor = {0.0f, 0.85f, 1.0f, 1.0f};
 
+		/*
+		Allocazione efficiente delle risorse: Specificare le dimensioni dei pool aiuta a 
+		pre-allocare le risorse in modo efficiente, evitando rallentamenti durante il runtime 
+		dovuti alla necessità di allocare dinamicamente nuove risorse. 
+		
+		Identifica e conta il numero di modelli, texture e altre risorse necessarie per la tua scena 
+		applicazione. Ad esempio, numAssets potrebbe rappresentare il numero di 
+		modelli principali e numAssets2 potrebbe rappresentare il numero di modelli aggiuntivi.
+		*/
+		uniformBlocksInPool = 5;
+        texturesInPool = 4;
+        setsInPool = 5;
+
 	    Ar = 4.0f / 3.0f;
 	}
 	
+	/**
+	 * Funzione per aggiustare l'Aspect Ratio quando modifichiamo le dimensioni della finestra
+	 */
 	void onWindowResize(int w, int h) {
 		std::cout << "Window resized to: " << w << " x " << h << "\n";
 		Ar = (float)w / (float)h;
@@ -124,7 +148,11 @@ class FinalProject : public BaseProject {
 		PPlane.create();
 
 		// Define the data set
-		DSPlane.init(this, &DSLPlane, {&planeTexture});
+		DSPlane.init(this, &DSLPlane, { 
+			{0, UNIFORM, sizeof(UniformBufferObject), nullptr}, 
+			{1, TEXTURE, 0, &planeTexture},
+			{2, UNIFORM, sizeof(GlobalUniformBufferObject), nullptr}
+		});
 		
 		txt.pipelinesAndDescriptorSetsInit();
 	}
@@ -216,8 +244,8 @@ class FinalProject : public BaseProject {
 		gubo.eyePos = CamPos;
 
 		// Map the uniforms
-		DSPlane.map(currentImage, &ubo, 0);
-		DSPlane.map(currentImage, &gubo, 2);
+		DSPlane.map(currentImage, &ubo, sizeof(ubo),0);
+		DSPlane.map(currentImage, &gubo, sizeof(gubo), 2);
 	}
 };
 
