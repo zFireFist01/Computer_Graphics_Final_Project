@@ -166,7 +166,7 @@ protected:
         MCol_Battleship = glm::vec4(1.0f);
 
         // Create the textures
-        planeTexture.init(this, "textures/water.png");
+        planeTexture.init(this, "textures/water_9x9.png");
         battleshipTexture.init(this, "textures/BattleshipTexture.jpeg");
 
         // Initialize text maker
