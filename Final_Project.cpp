@@ -255,7 +255,7 @@ protected:
         getSixAxis(deltaT, m, r, fire);
 
         const float ROT_SPEED = glm::radians(120.0f);
-        const float MOVE_SPEED = 2.0f;
+        const float MOVE_SPEED = 5.0f; //If you want to move faster, increase this value
 
         CamAlpha = CamAlpha - ROT_SPEED * deltaT * r.y;
         CamBeta  = CamBeta  - ROT_SPEED * deltaT * r.x;
@@ -273,7 +273,7 @@ protected:
         }
 
         // Here is where you actually update your uniforms
-        glm::mat4 M = glm::perspective(glm::radians(45.0f), Ar, 0.1f, 50.0f);
+        glm::mat4 M = glm::perspective(glm::radians(45.0f), Ar, 0.1f, 1000.0f); // Projection matrix; If you want to see further icrease the last parameter
         M[1][1] *= -1;
 
         glm::mat4 Mv =  glm::rotate(glm::mat4(1.0), -CamBeta, glm::vec3(1,0,0)) *
