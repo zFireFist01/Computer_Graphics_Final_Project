@@ -101,7 +101,7 @@ class FinalProject : public BaseProject {
         // window size, titile and initial background
         windowWidth = 800;
         windowHeight = 600;
-        windowTitle = "A10 - Adding an object";
+        windowTitle = "FinalProject - Warships";
         windowResizable = GLFW_TRUE;
         initialBackgroundColor = {0.1f, 0.1f, 0.1f, 1.0f};
         
