@@ -73,7 +73,7 @@ class FinalProject : public BaseProject {
     
     
     Model MskyBox;
-    Texture TskyBox, Tstars;
+    Texture TskyBox;
     DescriptorSet DSskyBox;
 
 
@@ -124,7 +124,7 @@ class FinalProject : public BaseProject {
         DSLskyBox.init(this, {
                     {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, sizeof(skyBoxUniformBufferObject), 1},
                     {1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 0, 1},
-                    {2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 1, 1}
+                    {2, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS, 1, 1}
                 });
         DSLPlane.init(this, {
                     {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, sizeof(UniformBufferObject), 1},
@@ -187,7 +187,6 @@ class FinalProject : public BaseProject {
         
         // Create the textures
         TskyBox.init(this, "textures/starmap_g4k.jpg");
-        Tstars.init(this, "textures/constellation_figures.png");
         TlargePlane.init(this, "textures/water_9x9.png");
         Tbattleship.init(this, "textures/BattleshipTexture.jpeg");
 
@@ -219,7 +218,7 @@ std::cout << "Initializing text\n";
         PBattleship.create();
 
         // Here you define the data set
-        DSskyBox.init(this, &DSLskyBox, {&TskyBox, &Tstars});
+        DSskyBox.init(this, &DSLskyBox, {&TskyBox});
         DSPlane.init(this, &DSLPlane, { &TlargePlane });
         DSBattleship.init(this, &DSLBattleship, { &Tbattleship });
 
@@ -250,7 +249,6 @@ std::cout << "Initializing text\n";
     // methods: .cleanup() recreates them, while .destroy() delete them completely
     void localCleanup() {   
         TskyBox.cleanup();
-        Tstars.cleanup();
         MskyBox.cleanup();
 
         TlargePlane.cleanup();
@@ -474,10 +472,10 @@ std::cout << "Initializing text\n";
         DSPlane.map(currentImage, &gubo, 2);
 
         // Update uniforms for the battleship
-		ubo.mMat = glm::mat4(1.0f);
-		ubo.mvpMat = ViewPrj * ubo.mMat;
-		ubo.nMat = glm::inverse(glm::transpose(ubo.mMat));
-		ubo.color = glm::vec4(1.0f);
+        ubo.mMat = glm::mat4(1.0f);
+        ubo.mvpMat = ViewPrj * ubo.mMat;
+        ubo.nMat = glm::inverse(glm::transpose(ubo.mMat));
+        ubo.color = glm::vec4(1.0f);
 
         DSBattleship.map(currentImage, &ubo, 0);
         DSBattleship.map(currentImage, &gubo, 2);
