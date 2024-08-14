@@ -188,7 +188,7 @@ class FinalProject : public BaseProject {
         // Create the textures
         TskyBox.init(this, "textures/starmap_g4k.jpg");
         TlargePlane.init(this, "textures/water_9x9.png");
-        Tbattleship.init(this, "textures/BattleshipTexture.jpeg");
+        Tbattleship.init(this, "textures/Metal.jpg");
 
 
         // Descriptor pool sizes
