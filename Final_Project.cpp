@@ -194,12 +194,11 @@ class FinalProject : public BaseProject {
         // Descriptor pool sizes
         // WARNING!!!!!!!!
         // Must be set before initializing the text and the scene
-// **A10** Update the number of elements to correctly size the descriptor sets pool
-        DPSZs.uniformBlocksInPool = 7;
-        DPSZs.texturesInPool = 9;
+        DPSZs.uniformBlocksInPool = 6;
+        DPSZs.texturesInPool = 6;
         DPSZs.setsInPool = 5;
 
-std::cout << "Initializing text\n";
+        std::cout << "Initializing text\n";
         txt.init(this, &outText);
 
         std::cout << "Initialization completed!\n";
@@ -209,7 +208,7 @@ std::cout << "Initializing text\n";
         
         ViewMatrix = glm::translate(glm::mat4(1), -CamPos);
     }
-    
+        
     // Here you create your pipelines and Descriptor Sets!
     void pipelinesAndDescriptorSetsInit() {
         // This creates a new pipeline (with the current surface), using its shaders
@@ -361,7 +360,7 @@ std::cout << "Initializing text\n";
             glfwSetWindowShouldClose(window, GL_TRUE);
         }
 
-
+        //Lo lascio potrebbe servire dopo per le macchine di gioco
         if(glfwGetKey(window, GLFW_KEY_V)) {
             if(!debounce) {
                 debounce = true;
@@ -472,10 +471,10 @@ std::cout << "Initializing text\n";
         DSPlane.map(currentImage, &gubo, 2);
 
         // Update uniforms for the battleship
-        ubo.mMat = glm::mat4(1.0f);
-        ubo.mvpMat = ViewPrj * ubo.mMat;
-        ubo.nMat = glm::inverse(glm::transpose(ubo.mMat));
-        ubo.color = glm::vec4(1.0f);
+		ubo.mMat = glm::mat4(1.0f);
+		ubo.mvpMat = ViewPrj * ubo.mMat;
+		ubo.nMat = glm::inverse(glm::transpose(ubo.mMat));
+		ubo.color = glm::vec4(1.0f);
 
         DSBattleship.map(currentImage, &ubo, 0);
         DSBattleship.map(currentImage, &gubo, 2);
