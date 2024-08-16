@@ -26,6 +26,7 @@ struct UniformBufferObject {
 };
 
 
+
 struct skyBoxUniformBufferObject {
     alignas(16) glm::mat4 mvpMat;
 };
@@ -41,7 +42,6 @@ struct Vertex {
     glm::vec2 UV;
     glm::vec3 norm;
 };
-
 
 
 // MAIN ! 
@@ -84,6 +84,9 @@ class FinalProject : public BaseProject {
     Model Mbattleship;
     Texture Tbattleship;
     DescriptorSet DSBattleship;
+
+    Model MsmallShip;
+    DescriptorSet DSsmallShip;
 
     // Other application parameters
     int currScene = 0;
@@ -184,19 +187,20 @@ class FinalProject : public BaseProject {
         MskyBox.init(this, &VDskyBox, "models/SkyBoxCube.obj", OBJ);
         MlargePlane.init(this, &VDPlane, "models/Water.obj", OBJ);
         Mbattleship.init(this, &VDBattleship, "models/Warships/Battleship.obj", OBJ);
+        MsmallShip.init(this, &VDBattleship, "models/Warships/Battleship.obj", OBJ);
         
         // Create the textures
         TskyBox.init(this, "textures/starmap_g4k.jpg");
-        TlargePlane.init(this, "textures/water_9x9.png");
+        TlargePlane.init(this, "textures/water_cropped_grid.jpg");
         Tbattleship.init(this, "textures/Metal.jpg");
 
 
         // Descriptor pool sizes
         // WARNING!!!!!!!!
         // Must be set before initializing the text and the scene
-        DPSZs.uniformBlocksInPool = 6;
-        DPSZs.texturesInPool = 6;
-        DPSZs.setsInPool = 5;
+        DPSZs.uniformBlocksInPool = 10;
+        DPSZs.texturesInPool = 10;
+        DPSZs.setsInPool = 10;
 
         std::cout << "Initializing text\n";
         txt.init(this, &outText);
@@ -220,6 +224,7 @@ class FinalProject : public BaseProject {
         DSskyBox.init(this, &DSLskyBox, {&TskyBox});
         DSPlane.init(this, &DSLPlane, { &TlargePlane });
         DSBattleship.init(this, &DSLBattleship, { &Tbattleship });
+        DSsmallShip.init(this, &DSLBattleship, { &Tbattleship });
 
         DSGlobal.init(this, &DSLGlobal, {});
 
@@ -237,7 +242,10 @@ class FinalProject : public BaseProject {
         DSskyBox.cleanup();
         DSPlane.cleanup();
         DSBattleship.cleanup();
+        DSsmallShip.cleanup();
+
         DSGlobal.cleanup();
+
 
         txt.pipelinesAndDescriptorSetsCleanup();
     }
@@ -255,6 +263,7 @@ class FinalProject : public BaseProject {
 
         Tbattleship.cleanup();
         Mbattleship.cleanup();
+        MsmallShip.cleanup();
         
         // Cleanup descriptor set layouts
         DSLGlobal.cleanup();
@@ -296,6 +305,13 @@ class FinalProject : public BaseProject {
         vkCmdDrawIndexed(commandBuffer, 
                     static_cast<uint32_t>(Mbattleship.indices.size()), 1, 0, 0, 0);
 
+        // Bind the pipeline for the Smallbattleship
+        MsmallShip.bind(commandBuffer);
+        DSsmallShip.bind(commandBuffer, PBattleship, 0, currentImage);
+        // Draw the battleship
+        vkCmdDrawIndexed(commandBuffer, 
+                    static_cast<uint32_t>(MsmallShip.indices.size()), 1, 0, 0, 0);
+
 
         txt.populateCommandBuffer(commandBuffer, currentImage, currScene);
     }
@@ -305,6 +321,34 @@ class FinalProject : public BaseProject {
     void updateUniformBuffer(uint32_t currentImage) {
         static bool debounce = false;
         static int curDebounce = 0;
+
+
+        int S = 9;  // Numero di righe
+        int T = 9;  // Numero di colonne
+        // Creiamo una matrice S x T di glm::mat4
+        std::vector<std::vector<glm::mat4>> matrix(S, std::vector<glm::mat4>(T));
+
+
+        // Inizializzazione degli elementi della matrice
+        for (int i = 0; i < S; ++i) {
+            for (int j = 0; j < T; ++j) {
+                matrix[i][j] = glm::mat4(1.0f); // Inizializza ogni glm::mat4 come matrice identità
+            }
+        }
+
+        // Ora costruiamo la scacchiera con le rispettive matrici
+        for (int i = 0; i < S; ++i) {
+            for (int j = 0; j < T; ++j) {
+                matrix[i][j] = glm::translate(glm::mat4(1.0f), glm::vec3(22.0f * (j-4), 0.0f, 22.0f * (i-4)));
+            }
+        }
+
+        //glm::mat4(1.0f) traslata di 1.5 rispetto all'asse x è il centro della scacchiera
+        //Ogni elemento della colonna 5 ha una traslazione x di 1.5f
+        //Ogni elemento si muove a multipli di 21.3f rispetto alla z
+        
+        
+
 
         float deltaT;
         glm::vec3 m = glm::vec3(0.0f), r = glm::vec3(0.0f);
@@ -330,6 +374,9 @@ class FinalProject : public BaseProject {
 
 
         static float subpassTimer = 0.0;
+
+    
+
 
         if(glfwGetKey(window, GLFW_KEY_SPACE)) {
             if(!debounce) {
@@ -471,13 +518,23 @@ class FinalProject : public BaseProject {
         DSPlane.map(currentImage, &gubo, 2);
 
         // Update uniforms for the battleship
-		ubo.mMat = glm::mat4(1.0f);
+		ubo.mMat = matrix[1][3];
 		ubo.mvpMat = ViewPrj * ubo.mMat;
 		ubo.nMat = glm::inverse(glm::transpose(ubo.mMat));
 		ubo.color = glm::vec4(1.0f);
 
         DSBattleship.map(currentImage, &ubo, 0);
         DSBattleship.map(currentImage, &gubo, 2);
+
+
+        // Update uniforms for the battleship
+		ubo.mMat = matrix[8][6];
+		ubo.mvpMat = ViewPrj * ubo.mMat;
+		ubo.nMat = glm::inverse(glm::transpose(ubo.mMat));
+		ubo.color = glm::vec4(1.0f);
+
+        DSsmallShip.map(currentImage, &ubo, 0);
+        DSsmallShip.map(currentImage, &gubo, 2);
 
         
         skyBoxUniformBufferObject sbubo{};
