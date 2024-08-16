@@ -4,6 +4,8 @@
 #include "modules/TextMaker.hpp"
 
 
+#define NPLANE 2
+
 std::vector<SingleText> outText = {
     {2, {"PlayGround Scene", "Press SPACE to save the screenshots","",""}, 0, 0},
     {1, {"Saving Screenshots. Please wait.", "", "",""}, 0, 0}
@@ -23,6 +25,14 @@ struct UniformBufferObject {
     alignas(16) glm::mat4 mMat;
     alignas(16) glm::mat4 nMat;
     alignas(16) glm::vec4 color;
+};
+
+
+struct PlaneUniformBufferObject {
+    alignas(16) glm::mat4 mvpMat[NPLANE];
+    alignas(16) glm::mat4 mMat[NPLANE];
+    alignas(16) glm::mat4 nMat[NPLANE];
+    alignas(16) glm::vec4 color[NPLANE];
 };
 
 
@@ -130,7 +140,7 @@ class FinalProject : public BaseProject {
                     {2, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS, 1, 1}
                 });
         DSLPlane.init(this, {
-                    {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, sizeof(UniformBufferObject), 1},
+                    {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, sizeof(PlaneUniformBufferObject), 1},
                     {1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 0, 1},
                     {2, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS, 1, 1}
                 });
@@ -174,7 +184,7 @@ class FinalProject : public BaseProject {
         PskyBox.setAdvancedFeatures(VK_COMPARE_OP_LESS_OR_EQUAL, VK_POLYGON_MODE_FILL,
                                     VK_CULL_MODE_BACK_BIT, false);
         
-        PPlane.init(this, &VDPlane, "shaders/PhongVert.spv", "shaders/PhongFrag.spv", {&DSLPlane});
+        PPlane.init(this, &VDPlane, "shaders/PlaneVert.spv", "shaders/PlaneFrag.spv", {&DSLPlane});
         PPlane.setAdvancedFeatures(VK_COMPARE_OP_LESS_OR_EQUAL, VK_POLYGON_MODE_FILL,
                                 VK_CULL_MODE_BACK_BIT, false);
 
@@ -295,9 +305,9 @@ class FinalProject : public BaseProject {
         DSPlane.bind(commandBuffer, PPlane, 0, currentImage);
         // Draw the plane
         vkCmdDrawIndexed(commandBuffer,
-                    static_cast<uint32_t>(MlargePlane.indices.size()), 1, 0, 0, 0);
+                    static_cast<uint32_t>(MlargePlane.indices.size()), NPLANE, 0, 0, 0);
 
-        // Bind the pipeline for the battleship
+        // Bind the pipeline for the battleship 
         PBattleship.bind(commandBuffer);
         Mbattleship.bind(commandBuffer);
         DSBattleship.bind(commandBuffer, PBattleship, 0, currentImage);
@@ -506,17 +516,24 @@ class FinalProject : public BaseProject {
         DSGlobal.map(currentImage, &gubo, 0);
 
 
-        UniformBufferObject ubo{};
+        PlaneUniformBufferObject pubo{};
 
         // Update uniforms for the plane
-        ubo.mMat = glm::mat4(1.0f);
-        ubo.mvpMat = ViewPrj * ubo.mMat;
-        ubo.nMat = glm::inverse(glm::transpose(ubo.mMat));
-        ubo.color = glm::vec4(1.0f);
+        pubo.mMat[0] = glm::mat4(1.0f);
+        pubo.mvpMat[0] = ViewPrj * pubo.mMat[0];
+        pubo.nMat[0] = glm::inverse(glm::transpose(pubo.mMat[0]));
+        pubo.color[0] = glm::vec4(1.0f);
+        
+        pubo.mMat[1] = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -195.0f));
+        pubo.mvpMat[1] = ViewPrj * pubo.mMat[1];
+        pubo.nMat[1] = glm::inverse(glm::transpose(pubo.mMat[1]));
+        pubo.color[1] = glm::vec4(1.0f);
 
-        DSPlane.map(currentImage, &ubo, 0);
+        DSPlane.map(currentImage, &pubo, 0);
         DSPlane.map(currentImage, &gubo, 2);
+        
 
+        UniformBufferObject ubo{};
         // Update uniforms for the battleship
 		ubo.mMat = matrix[1][3];
 		ubo.mvpMat = ViewPrj * ubo.mMat;
