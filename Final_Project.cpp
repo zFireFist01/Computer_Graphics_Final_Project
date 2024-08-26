@@ -86,10 +86,13 @@ protected:
     Texture TskyBox;
     DescriptorSet DSskyBox;
 
-
     Model MlargePlane;
     Texture TlargePlane;
     DescriptorSet DSPlane;
+
+    Model MverticalPlane;  // Modello per il piano verticale
+    Texture TverticalPlane;  // Texture per il piano verticale
+    DescriptorSet DSVerticalPlane;  // Descriptor set per il piano verticale
 
     Model Mbattleship;
     Texture Tbattleship;
@@ -205,26 +208,27 @@ protected:
         PBattleship.setAdvancedFeatures(VK_COMPARE_OP_LESS_OR_EQUAL, VK_POLYGON_MODE_FILL,
             VK_CULL_MODE_BACK_BIT, false);
 
-
         // Create models
         MskyBox.init(this, &VDskyBox, "models/SkyBoxCube.obj", OBJ);
         MlargePlane.init(this, &VDPlane, "models/Water.obj", OBJ);
         Mbattleship.init(this, &VDBattleship, "models/Warships/Battleship.obj", OBJ);
         MsmallShip.init(this, &VDBattleship, "models/Warships/Battleship.obj", OBJ);
         Mmissile.init(this, &VDBattleship, "models/Missile/missile3.obj", OBJ);
+        MverticalPlane.init(this, &VDPlane, "models/LargePlane3.obj", OBJ);  // Inizializza il modello del piano verticale
 
         // Create the textures
         TskyBox.init(this, "textures/starmap_g4k.jpg");
         TlargePlane.init(this, "textures/water_cropped_grid.jpg");
         Tbattleship.init(this, "textures/Metal.jpg");
         Tmissile.init(this, "textures/missile_texture.jpg");
+        TverticalPlane.init(this, "textures/vertical_plane_texture.jpg");  // Inizializza la texture del piano verticale (sostituisci con il percorso corretto)
 
         // Descriptor pool sizes
         // WARNING!!!!!!!!
         // Must be set before initializing the text and the scene
-        DPSZs.uniformBlocksInPool = 12; // prima era 10
-        DPSZs.texturesInPool = 12; // prima era 10
-        DPSZs.setsInPool = 12; // da vedere se vanno aumentati
+        DPSZs.uniformBlocksInPool = 14; // prima era 10
+        DPSZs.texturesInPool = 14; // prima era 10
+        DPSZs.setsInPool = 14; // da vedere se vanno aumentati
 
         std::cout << "Initializing text\n";
         txt.init(this, &outText);
@@ -250,6 +254,7 @@ protected:
         DSBattleship.init(this, &DSLBattleship, { &Tbattleship });
         DSsmallShip.init(this, &DSLBattleship, { &Tbattleship });
         DSmissile.init(this, &DSLBattleship, { &Tmissile });
+        DSVerticalPlane.init(this, &DSLPlane, { &TverticalPlane });  // Inizializza il descriptor set per il piano verticale con la sua texture
 
         DSGlobal.init(this, &DSLGlobal, {});
 
@@ -270,7 +275,7 @@ protected:
         DSsmallShip.cleanup();
         DSmissile.cleanup();
         DSGlobal.cleanup();
-
+        DSVerticalPlane.cleanup();
 
         txt.pipelinesAndDescriptorSetsCleanup();
     }
@@ -289,6 +294,9 @@ protected:
         Tbattleship.cleanup();
         Mbattleship.cleanup();
         MsmallShip.cleanup();
+
+        TverticalPlane.cleanup();
+        MverticalPlane.cleanup();
 
         Tmissile.cleanup();
         Mmissile.cleanup();
@@ -346,6 +354,12 @@ protected:
         DSmissile.bind(commandBuffer, PBattleship, 0, currentImage);
         vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(Mmissile.indices.size()), 1, 0, 0, 0);
 
+        // Vertical plane
+        MverticalPlane.bind(commandBuffer);
+        DSVerticalPlane.bind(commandBuffer, PPlane, 0, currentImage);
+        vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(MverticalPlane.indices.size()), 1, 0, 0, 0);
+
+
         txt.populateCommandBuffer(commandBuffer, currentImage, currScene);
     }
 
@@ -365,7 +379,7 @@ protected:
         // Inizializzazione degli elementi della matrice
         for (int i = 0; i < S; ++i) {
             for (int j = 0; j < T; ++j) {
-                matrix[i][j] = glm::mat4(1.0f); // Inizializza ogni glm::mat4 come matrice identità
+                matrix[i][j] = glm::mat4(1.0f); // Inizializza ogni glm::mat4 come matrice identit�
             }
         }
 
@@ -376,7 +390,7 @@ protected:
             }
         }
 
-        //glm::mat4(1.0f) traslata di 1.5 rispetto all'asse x è il centro della scacchiera
+        //glm::mat4(1.0f) traslata di 1.5 rispetto all'asse x � il centro della scacchiera
         //Ogni elemento della colonna 5 ha una traslazione x di 1.5f
         //Ogni elemento si muove a multipli di 21.3f rispetto alla z
 
@@ -404,8 +418,6 @@ protected:
 
 
         static float subpassTimer = 0.0;
-
-
 
 
         if (glfwGetKey(window, GLFW_KEY_SPACE)) {
@@ -582,6 +594,17 @@ protected:
         sbubo.mvpMat = M * glm::mat4(glm::mat3(Mv));
         DSskyBox.map(currentImage, &sbubo, 0);
         
+        //For the vertical plane
+        UniformBufferObject uboVerticalPlane{};
+
+        uboVerticalPlane.mMat = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, 0.0f)) * glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+        uboVerticalPlane.mvpMat = ViewPrj * uboVerticalPlane.mMat;
+        uboVerticalPlane.nMat = glm::inverse(glm::transpose(uboVerticalPlane.mMat));
+        uboVerticalPlane.color = glm::vec4(1.0f);  // Colore del piano verticale
+
+        DSVerticalPlane.map(currentImage, &uboVerticalPlane, 0);
+        DSVerticalPlane.map(currentImage, &gubo, 2);
+
         /* Aggiorna la posizione del missile (versione dove cade dall'alto)
         missilePos += missileDir * missileSpeed * deltaT;
 
@@ -599,7 +622,6 @@ protected:
         } else {
             missilePos = missileStartPos;
         }*/
-
 
         // Aggiorna la posizione del missile
         missileTime += deltaT / totalTime; // Aggiorna il tempo normalizzato (0 -> 1)
