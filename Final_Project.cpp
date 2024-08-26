@@ -19,6 +19,13 @@ struct GlobalUniformBufferObject {
     alignas(16) glm::vec4 eyeDir;
 };
 
+enum GameState {
+    WAITING_FOR_INPUT_X,
+    WAITING_FOR_INPUT_Y,
+    PROCESSING_INPUT,
+    ANIMATING_MISSILE,
+};
+
 
 struct UniformBufferObject {
     alignas(16) glm::mat4 mvpMat;
@@ -109,7 +116,7 @@ protected:
     int currScene = 0;
     int subpass = 0;
 
-    glm::vec3 CamPos = glm::vec3(0.0, 0.1, 5.0);
+    glm::vec3 CamPos = glm::vec3(0.0f, 50.0f, 100.0f);
     glm::mat4 ViewMatrix;
     float CamAlpha = 0.0f;
     float CamBeta = 0.0f;
@@ -117,13 +124,18 @@ protected:
     float Ar;
 
     //missile trajectory data
-    glm::vec3 missileStartPos = glm::vec3(0.0f, 0.0f, 0.0f);  // Posizione iniziale sopra il piano
-    glm::vec3 missileEndPos = glm::vec3(10.0f, 0.0f, 0.0f);
-    float h = 15.0f;
+    glm::vec3 missileStartPos = glm::vec3(0.0f, 0.0f, 100.0f);  // Posizione iniziale sopra il piano
+    glm::vec3 missileEndPos = glm::vec3(0.0f, 0.0f, 0.0f);
+    float h = 20.0f;
     float missileTime = 0.0f;
     float totalTime = 3.0f;
     glm::vec3 missilePos = missileStartPos;  // Posizione corrente del missile
-
+    GameState currentState = WAITING_FOR_INPUT_X;
+    int targetX = -1;
+    int targetY = -1;
+    bool inputXSet = false;  // True se il targetX è stato inserito
+    bool inputYSet = false;  // True se il targetY è stato inserito
+    bool missileVisible = false; // Determina se deve essere disegnato o meno
 
     // Here you set the main application parameters
     void setWindowParameters() {
@@ -379,7 +391,7 @@ protected:
         // Inizializzazione degli elementi della matrice
         for (int i = 0; i < S; ++i) {
             for (int j = 0; j < T; ++j) {
-                matrix[i][j] = glm::mat4(1.0f); // Inizializza ogni glm::mat4 come matrice identit�
+                matrix[i][j] = glm::mat4(1.0f); // Inizializza ogni glm::mat4 come matrice identità
             }
         }
 
@@ -390,7 +402,7 @@ protected:
             }
         }
 
-        //glm::mat4(1.0f) traslata di 1.5 rispetto all'asse x � il centro della scacchiera
+        //glm::mat4(1.0f) traslata di 1.5 rispetto all'asse x è il centro della scacchiera
         //Ogni elemento della colonna 5 ha una traslazione x di 1.5f
         //Ogni elemento si muove a multipli di 21.3f rispetto alla z
 
@@ -529,8 +541,7 @@ protected:
                 }
             }
         }
-
-
+               
         // Here is where you actually update your uniforms
         glm::mat4 M = glm::perspective(glm::radians(45.0f), Ar, 0.1f, 1000.0f); // Projection matrix; If you want to see further icrease the last parameter
         M[1][1] *= -1;
@@ -605,77 +616,152 @@ protected:
         DSVerticalPlane.map(currentImage, &uboVerticalPlane, 0);
         DSVerticalPlane.map(currentImage, &gubo, 2);
 
-        /* Aggiorna la posizione del missile (versione dove cade dall'alto)
-        missilePos += missileDir * missileSpeed * deltaT;
+        //FSA che gestisce il missile dall'input all'animazione
+        switch (currentState) {
+            case WAITING_FOR_INPUT_X: {
+                if (!debounce) {
+                    if (glfwGetKey(window, GLFW_KEY_0) == GLFW_PRESS) { targetX = 0; debounce = true; }
+                    if (glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS) { targetX = 1; debounce = true; }
+                    if (glfwGetKey(window, GLFW_KEY_2) == GLFW_PRESS) { targetX = 2; debounce = true; }
+                    if (glfwGetKey(window, GLFW_KEY_3) == GLFW_PRESS) { targetX = 3; debounce = true; }
+                    if (glfwGetKey(window, GLFW_KEY_4) == GLFW_PRESS) { targetX = 4; debounce = true; }
+                    if (glfwGetKey(window, GLFW_KEY_5) == GLFW_PRESS) { targetX = 5; debounce = true; }
+                    if (glfwGetKey(window, GLFW_KEY_6) == GLFW_PRESS) { targetX = 6; debounce = true; }
+                    if (glfwGetKey(window, GLFW_KEY_7) == GLFW_PRESS) { targetX = 7; debounce = true; }
+                    if (glfwGetKey(window, GLFW_KEY_8) == GLFW_PRESS) { targetX = 8; debounce = true; }
 
-        // Se il missile ha raggiunto il piano, ferma l'animazione
-        if (missilePos.y > 0.0f) {
-            // Aggiorna gli uniforms per il missile
-            UniformBufferObject uboMissile{};
-            uboMissile.mMat = glm::translate(glm::mat4(1.0f), missilePos);
-            uboMissile.mvpMat = ViewPrj * uboMissile.mMat;
-            uboMissile.nMat = glm::inverse(glm::transpose(uboMissile.mMat));
-            uboMissile.color = glm::vec4(1.0f);
+                    if (targetX != -1) {
+                        inputXSet = true;  // La coordinata X è stata inserita
+                        std::cout << "X set to: " << targetX << "\n";
+                        currentState = WAITING_FOR_INPUT_Y;
+                    }
+                }
+                if (glfwGetKey(window, GLFW_KEY_0) == GLFW_RELEASE &&
+                    glfwGetKey(window, GLFW_KEY_1) == GLFW_RELEASE &&
+                    glfwGetKey(window, GLFW_KEY_2) == GLFW_RELEASE &&
+                    glfwGetKey(window, GLFW_KEY_3) == GLFW_RELEASE &&
+                    glfwGetKey(window, GLFW_KEY_4) == GLFW_RELEASE &&
+                    glfwGetKey(window, GLFW_KEY_5) == GLFW_RELEASE &&
+                    glfwGetKey(window, GLFW_KEY_6) == GLFW_RELEASE &&
+                    glfwGetKey(window, GLFW_KEY_7) == GLFW_RELEASE &&
+                    glfwGetKey(window, GLFW_KEY_8) == GLFW_RELEASE) {
+                    debounce = false;  // Reset debounce
+                }
+                break;
 
-            DSmissile.map(currentImage, &uboMissile, 0);
-            DSmissile.map(currentImage, &gubo, 2);
-        } else {
-            missilePos = missileStartPos;
-        }*/
+            }
+                
+            case WAITING_FOR_INPUT_Y: {
+                if (!debounce) {
+                    if (glfwGetKey(window, GLFW_KEY_0) == GLFW_PRESS) { targetY = 0; debounce = true; }
+                    if (glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS) { targetY = 1; debounce = true; }
+                    if (glfwGetKey(window, GLFW_KEY_2) == GLFW_PRESS) { targetY = 2; debounce = true; }
+                    if (glfwGetKey(window, GLFW_KEY_3) == GLFW_PRESS) { targetY = 3; debounce = true; }
+                    if (glfwGetKey(window, GLFW_KEY_4) == GLFW_PRESS) { targetY = 4; debounce = true; }
+                    if (glfwGetKey(window, GLFW_KEY_5) == GLFW_PRESS) { targetY = 5; debounce = true; }
+                    if (glfwGetKey(window, GLFW_KEY_6) == GLFW_PRESS) { targetY = 6; debounce = true; }
+                    if (glfwGetKey(window, GLFW_KEY_7) == GLFW_PRESS) { targetY = 7; debounce = true; }
+                    if (glfwGetKey(window, GLFW_KEY_8) == GLFW_PRESS) { targetY = 8; debounce = true; }
 
-        // Aggiorna la posizione del missile
-        missileTime += deltaT / totalTime; // Aggiorna il tempo normalizzato (0 -> 1)
+                    if (targetY != -1) {
+                        inputYSet = true;  // La coordinata Y è stata inserita
+                        std::cout << "Y set to: " << targetY << "\n";
+                        currentState = PROCESSING_INPUT;
+                    }
+                }
+                if (glfwGetKey(window, GLFW_KEY_0) == GLFW_RELEASE &&
+                    glfwGetKey(window, GLFW_KEY_1) == GLFW_RELEASE &&
+                    glfwGetKey(window, GLFW_KEY_2) == GLFW_RELEASE &&
+                    glfwGetKey(window, GLFW_KEY_3) == GLFW_RELEASE &&
+                    glfwGetKey(window, GLFW_KEY_4) == GLFW_RELEASE &&
+                    glfwGetKey(window, GLFW_KEY_5) == GLFW_RELEASE &&
+                    glfwGetKey(window, GLFW_KEY_6) == GLFW_RELEASE &&
+                    glfwGetKey(window, GLFW_KEY_7) == GLFW_RELEASE &&
+                    glfwGetKey(window, GLFW_KEY_8) == GLFW_RELEASE) {
+                    debounce = false;  // Reset debounce
+                }
+                break;
+            }
+                
 
-        // Clamp del tempo per assicurarsi che rimanga nell'intervallo [0, 1]
-        missileTime = glm::clamp(missileTime, 0.0f, 1.0f);
+            case PROCESSING_INPUT: {
+                if (targetX != -1 && targetY != -1) {
+                    missileVisible = true;
+                    glm::mat4 targetMatrix = matrix[targetX][targetY];
+                    glm::vec3 targetPosition = glm::vec3(targetMatrix[3]);
+                    missileEndPos = targetPosition;
+                    missileTime = 0.0f;  // Reset the missile animation time
+                    // Reset degli input per il prossimo round
+                    inputXSet = false;
+                    inputYSet = false;
+                    targetX = -1;
+                    targetY = -1;
+                    currentState = ANIMATING_MISSILE;
+                }
+                break;
+            }
+                
 
-        // Calcola la nuova posizione del missile
-        float t = missileTime;
-        float x = missileStartPos.x + t * (missileEndPos.x - missileStartPos.x);
-        float y = missileStartPos.y + 4 * h * t * (1.0f - t);  // Vertical component for the parabolic arc
-        float z = missileStartPos.z + t * (missileEndPos.z - missileStartPos.z);  // Horizontal direction
+            case ANIMATING_MISSILE: {
+                if (missileVisible) {
+                    // Aggiorna la posizione del missile
+                    missileTime += deltaT / totalTime; // Aggiorna il tempo normalizzato (0 -> 1)
 
-        missilePos = glm::vec3(x, y, z);
+                    // Clamp del tempo per assicurarsi che rimanga nell'intervallo [0, 1]
+                    missileTime = glm::clamp(missileTime, 0.0f, 1.0f);
 
-        glm::vec3 velocity = glm::normalize(glm::vec3(
-            missileEndPos.x - missileStartPos.x,
-            4 * h * (1.0f - 2.0f * t),  // Derivative of the vertical parabolic function
-            missileEndPos.z - missileStartPos.z
-        ));
+                    // Calcola la nuova posizione del missile
+                    float t = missileTime;
+                    float x = missileStartPos.x + t * (missileEndPos.x - missileStartPos.x);
+                    float y = missileStartPos.y + 4 * h * t * (1.0f - t);  // Vertical component for the parabolic arc
+                    float z = missileStartPos.z + t * (missileEndPos.z - missileStartPos.z);  // Horizontal direction
 
-        // Calculate the right vector using a cross product with an up vector
-        glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f);  // Up vector
-        glm::vec3 right = glm::normalize(glm::cross(up, velocity));
+                    missilePos = glm::vec3(x, y, z);
 
-        // Recalculate the up vector to ensure orthogonality
-        up = glm::normalize(glm::cross(velocity, right));
+                    glm::vec3 velocity = glm::normalize(glm::vec3(
+                        missileEndPos.x - missileStartPos.x,
+                        4 * h * (1.0f - 2.0f * t),  // Derivative of the vertical parabolic function
+                        missileEndPos.z - missileStartPos.z
+                    ));
 
-        // Create the rotation matrix to orient the missile
-        glm::mat4 rotationMatrix = glm::mat4(glm::vec4(right, 0.0f),
-            glm::vec4(up, 0.0f),
-            glm::vec4(velocity, 0.0f),
-            glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
+                    // Calculate the right vector using a cross product with an up vector
+                    glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f);  // Up vector
+                    glm::vec3 right = glm::normalize(glm::cross(up, velocity));
 
-        // Create the transformation matrix for the missile
-        glm::mat4 translationMatrix = glm::translate(glm::mat4(1.0f), missilePos);
-        glm::mat4 modelMatrix = translationMatrix * rotationMatrix;
+                    // Recalculate the up vector to ensure orthogonality
+                    up = glm::normalize(glm::cross(velocity, right));
 
-        // Se il missile ha raggiunto il punto finale, ferma l'animazione
-        if (missileTime >= 1.0f) {
-            missilePos = missileStartPos;  // Reset to start position
-            missileTime = 0.0f;  // Reset the time        }
-        } else {
-            // Update the uniform buffer for the missile
-            UniformBufferObject uboMissile{};
-            uboMissile.mMat = modelMatrix;  // Apply the transformation
-            uboMissile.mvpMat = ViewPrj * uboMissile.mMat;
-            uboMissile.nMat = glm::inverse(glm::transpose(uboMissile.mMat));
-            uboMissile.color = glm::vec4(1.0f);
+                    // Create the rotation matrix to orient the missile
+                    glm::mat4 rotationMatrix = glm::mat4(glm::vec4(right, 0.0f),
+                        glm::vec4(up, 0.0f),
+                        glm::vec4(velocity, 0.0f),
+                        glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
 
-            DSmissile.map(currentImage, &uboMissile, 0);
-            DSmissile.map(currentImage, &gubo, 2);
+                    // Create the transformation matrix for the missile
+                    glm::mat4 translationMatrix = glm::translate(glm::mat4(1.0f), missilePos);
+                    glm::mat4 modelMatrix = translationMatrix * rotationMatrix;
+
+                    // Se il missile ha raggiunto il punto finale, ferma l'animazione
+                    if (missileTime >= 1.0f || glm::length(missilePos - missileEndPos) < 0.1) {
+                        missileVisible = false;  // Nascondi il missile
+                        glm::vec3 missilePos = missileStartPos;
+                        currentState = WAITING_FOR_INPUT_X;  // Torna allo stato di attesa per nuove coordinate
+
+                    } else {
+                        // Update the uniform buffer for the missile
+                        UniformBufferObject uboMissile{};
+                        uboMissile.mMat = modelMatrix;  // Apply the transformation
+                        uboMissile.mvpMat = ViewPrj * uboMissile.mMat;
+                        uboMissile.nMat = glm::inverse(glm::transpose(uboMissile.mMat));
+                        uboMissile.color = glm::vec4(1.0f);
+
+                        DSmissile.map(currentImage, &uboMissile, 0);
+                        DSmissile.map(currentImage, &gubo, 2);
+                    }
+                    break;
+                }
+            }
         }
-        
 
     }
 };
