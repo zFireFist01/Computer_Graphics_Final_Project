@@ -43,7 +43,6 @@ struct PlaneUniformBufferObject {
 };
 
 
-
 struct skyBoxUniformBufferObject {
     alignas(16) glm::mat4 mvpMat;
 };
@@ -115,6 +114,7 @@ protected:
     // Other application parameters
     int currScene = 0;
     int subpass = 0;
+    int currPlayer = 0;
 
     glm::vec3 CamPos = glm::vec3(0.0f, 50.0f, 100.0f);
     glm::mat4 ViewMatrix;
@@ -704,6 +704,7 @@ protected:
 
             case ANIMATING_MISSILE: {
                 if (missileVisible) {
+
                     // Aggiorna la posizione del missile
                     missileTime += deltaT / totalTime; // Aggiorna il tempo normalizzato (0 -> 1)
 
@@ -744,10 +745,22 @@ protected:
                     // Se il missile ha raggiunto il punto finale, ferma l'animazione
                     if (missileTime >= 1.0f || glm::length(missilePos - missileEndPos) < 0.1) {
                         missileVisible = false;  // Nascondi il missile
-                        glm::vec3 missilePos = missileStartPos;
+                        missilePos = missileStartPos;
+                        currPlayer = (currPlayer + 1) % 2;
+                        std::cout << "currentPlayer = " << currPlayer << '\n';
                         currentState = WAITING_FOR_INPUT_X;  // Torna allo stato di attesa per nuove coordinate
-
+                        if (currPlayer == 1) {
+                            CamPos = glm::vec3(0.0f, 50.0f, -300.0f);  // Posizione dietro al vertical plane
+                            ViewMatrix = glm::lookAt(CamPos, glm::vec3(0.0f, 50.0f, 100.0f), glm::vec3(0.0f, 1.0f, 0.0f));  // TODO: non guarda verso il piano verticale
+                        }
+                        else {
+                            CamPos = glm::vec3(0.0f, 50.0f, 100.0f);
+                            ViewMatrix = glm::lookAt(CamPos, glm::vec3(0.0f, 50.0f, -300.0f), glm::vec3(0.0f, 1.0f, 0.0f)); // TODO: non guarda verso il piano verticale
+                        }
                     } else {
+                        CamPos = missilePos + glm::vec3(0.0f, 4.0f, 0.0f);
+                        glm::vec3 cameraTarget = missilePos + velocity;
+                        ViewMatrix = glm::lookAt(CamPos, cameraTarget, up);
                         // Update the uniform buffer for the missile
                         UniformBufferObject uboMissile{};
                         uboMissile.mMat = modelMatrix;  // Apply the transformation
