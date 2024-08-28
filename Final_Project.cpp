@@ -20,6 +20,7 @@ struct GlobalUniformBufferObject {
 };
 
 enum GameState {
+    TEST_LIGH,
     WAITING_BOAT_X,
     WAITING_BOAT_Y,
     PROCESSING_BOAT_INPUT,
@@ -60,6 +61,11 @@ struct Vertex {
     glm::vec3 pos;
     glm::vec2 UV;
     glm::vec3 norm;
+};
+
+struct Light {
+    glm::vec3 position;
+    glm::vec3 color;
 };
 
 
@@ -114,6 +120,10 @@ protected:
     Texture Tmissile;
     DescriptorSet DSmissile;
 
+    //luce
+    Light sunLight = { glm::vec3(-10.0f, -10.0f, -10.0f), glm::vec3(1.0f, 1.0f, 1.0f) };
+
+
     // Other application parameters
     int currScene = 0;
     int subpass = 0;
@@ -152,6 +162,13 @@ protected:
     bool missileVisible = false; // Determina se deve essere disegnato o meno
     bool boatVisible = false;
     
+
+    //funzione aggiornamento luce:
+    void updateLightPosition() {
+        sunLight.position.y += 0.1;
+        sunLight.position.x += 0.1;
+        sunLight.position.z += 0.1;
+    }
 
     // Here you set the main application parameters
     void setWindowParameters() {
@@ -396,7 +413,8 @@ protected:
     void updateUniformBuffer(uint32_t currentImage) {
         static bool debounce = false;
         static int curDebounce = 0;
-
+        
+        updateLightPosition();
 
         int S = 9;  // Numero di righe
         int T = 9;  // Numero di colonne
@@ -429,7 +447,7 @@ protected:
 
 
         const float ROT_SPEED = glm::radians(120.0f);
-        const float MOVE_SPEED = 5.0f; //If you want to move faster, increase this value
+        const float MOVE_SPEED = 30.0f; //If you want to move faster, increase this value
 
 
         // The Fly model update proc.
@@ -478,7 +496,7 @@ protected:
             glfwSetWindowShouldClose(window, GL_TRUE);
         }
 
-        //Lo lascio potrebbe servire dopo per le macchine di gioco
+        /*Lo lascio potrebbe servire dopo per le macchine di gioco
         if (glfwGetKey(window, GLFW_KEY_V)) {
             if (!debounce) {
                 debounce = true;
@@ -518,7 +536,7 @@ protected:
                 debounce = false;
                 curDebounce = 0;
             }
-        }
+        }*/
 
 
         if (currScene == 1) {
@@ -572,8 +590,8 @@ protected:
         // updates global uniforms
         // Global
         GlobalUniformBufferObject gubo{};
-        gubo.lightDir = glm::vec3(cos(glm::radians(135.0f)), sin(glm::radians(135.0f)), 0.0f);
-        gubo.lightColor = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
+        gubo.lightDir = sunLight.position;
+        gubo.lightColor = glm::vec4(sunLight.color, 1.0f);
         gubo.eyePos = glm::vec3(glm::inverse(ViewMatrix) * glm::vec4(0, 0, 0, 1));
         gubo.eyeDir = glm::vec4(0, 0, 0, 1) * ViewMatrix;
         DSGlobal.map(currentImage, &gubo, 0);
@@ -968,6 +986,7 @@ protected:
                         // TODO - settare l'arrivo in base alla matrice che mappa il secondo tabellone
                     }
                     // Reset degli input per il prossimo round
+                    h = length(missileEndPos - missileStartPos) * 0.4;
                     inputXSet = false;
                     inputYSet = false;
                     targetX = -1;
