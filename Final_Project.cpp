@@ -109,12 +109,17 @@ protected:
     Texture TverticalPlane;  // Texture per il piano verticale
     DescriptorSet DSVerticalPlane;  // Descriptor set per il piano verticale
 
-    Model Mbattleship;
+    Model Mb0p0;
     Texture Tbattleship;
-    DescriptorSet DSBattleship;
+    DescriptorSet DSb0p0;
 
-    Model MsmallShip;
-    DescriptorSet DSsmallShip;
+    Model Mb1p0;
+    DescriptorSet DSb1p0;
+
+    Model Mb0p1;
+    DescriptorSet DSb0p1;
+    Model Mb1p1;
+    DescriptorSet DSb1p1;
 
     Model Mmissile;
     Texture Tmissile;
@@ -256,8 +261,10 @@ protected:
         // Create models
         MskyBox.init(this, &VDskyBox, "models/SkyBoxCube.obj", OBJ);
         MlargePlane.init(this, &VDPlane, "models/Water.obj", OBJ);
-        Mbattleship.init(this, &VDBattleship, "models/Warships/Battleship.obj", OBJ);
-        MsmallShip.init(this, &VDBattleship, "models/Warships/Battleship.obj", OBJ);
+        Mb0p0.init(this, &VDBattleship, "models/Warships/Battleship.obj", OBJ);
+        Mb1p0.init(this, &VDBattleship, "models/Warships/Battleship.obj", OBJ);
+        Mb0p1.init(this, &VDBattleship, "models/Warships/Battleship.obj", OBJ);
+        Mb1p1.init(this, &VDBattleship, "models/Warships/Battleship.obj", OBJ);
         Mmissile.init(this, &VDBattleship, "models/Missile/missile3.obj", OBJ);
         MverticalPlane.init(this, &VDPlane, "models/LargePlane3.obj", OBJ);  // Inizializza il modello del piano verticale
 
@@ -296,8 +303,10 @@ protected:
         // Here you define the data set
         DSskyBox.init(this, &DSLskyBox, { &TskyBox });
         DSPlane.init(this, &DSLPlane, { &TlargePlane });
-        DSBattleship.init(this, &DSLBattleship, { &Tbattleship });
-        DSsmallShip.init(this, &DSLBattleship, { &Tbattleship });
+        DSb0p0.init(this, &DSLBattleship, { &Tbattleship });
+        DSb1p0.init(this, &DSLBattleship, { &Tbattleship });
+        DSb0p1.init(this, &DSLBattleship, { &Tbattleship });
+        DSb1p1.init(this, &DSLBattleship, { &Tbattleship });
         DSmissile.init(this, &DSLBattleship, { &Tmissile });
         DSVerticalPlane.init(this, &DSLPlane, { &TverticalPlane });  // Inizializza il descriptor set per il piano verticale con la sua texture
 
@@ -316,8 +325,10 @@ protected:
 
         DSskyBox.cleanup();
         DSPlane.cleanup();
-        DSBattleship.cleanup();
-        DSsmallShip.cleanup();
+        DSb0p0.cleanup();
+        DSb1p0.cleanup();
+        DSb0p1.cleanup();
+        DSb1p1.cleanup();
         DSmissile.cleanup();
         DSGlobal.cleanup();
         DSVerticalPlane.cleanup();
@@ -337,8 +348,10 @@ protected:
         MlargePlane.cleanup();
 
         Tbattleship.cleanup();
-        Mbattleship.cleanup();
-        MsmallShip.cleanup();
+        Mb0p0.cleanup();
+        Mb1p0.cleanup();
+        Mb0p1.cleanup();
+        Mb1p1.cleanup();
 
         TverticalPlane.cleanup();
         MverticalPlane.cleanup();
@@ -381,18 +394,32 @@ protected:
 
         // Bind the pipeline for the battleship 
         PBattleship.bind(commandBuffer);
-        Mbattleship.bind(commandBuffer);
-        DSBattleship.bind(commandBuffer, PBattleship, 0, currentImage);
+        Mb0p0.bind(commandBuffer);
+        DSb0p0.bind(commandBuffer, PBattleship, 0, currentImage);
         // Draw the battleship
         vkCmdDrawIndexed(commandBuffer,
-            static_cast<uint32_t>(Mbattleship.indices.size()), 1, 0, 0, 0);
+            static_cast<uint32_t>(Mb0p0.indices.size()), 1, 0, 0, 0);
 
         // Bind the pipeline for the Smallbattleship
-        MsmallShip.bind(commandBuffer);
-        DSsmallShip.bind(commandBuffer, PBattleship, 0, currentImage);
+        Mb1p0.bind(commandBuffer);
+        DSb1p0.bind(commandBuffer, PBattleship, 0, currentImage);
         // Draw the battleship
         vkCmdDrawIndexed(commandBuffer,
-            static_cast<uint32_t>(MsmallShip.indices.size()), 1, 0, 0, 0);
+            static_cast<uint32_t>(Mb1p0.indices.size()), 1, 0, 0, 0);
+
+        // Bind the pipeline for the Smallbattleship
+        Mb0p1.bind(commandBuffer);
+        DSb0p1.bind(commandBuffer, PBattleship, 0, currentImage);
+        // Draw the battleship
+        vkCmdDrawIndexed(commandBuffer,
+            static_cast<uint32_t>(Mb0p1.indices.size()), 1, 0, 0, 0);
+
+        // Bind the pipeline for the Smallbattleship
+        Mb1p1.bind(commandBuffer);
+        DSb1p1.bind(commandBuffer, PBattleship, 0, currentImage);
+        // Draw the battleship
+        vkCmdDrawIndexed(commandBuffer,
+            static_cast<uint32_t>(Mb1p1.indices.size()), 1, 0, 0, 0);
 
         //missile
         Mmissile.bind(commandBuffer);
@@ -888,8 +915,8 @@ protected:
                 ubo.nMat = glm::inverse(glm::transpose(ubo.mMat));
                 ubo.color = glm::vec4(1.0f);
 
-                DSBattleship.map(currentImage, &ubo, 0);
-                DSBattleship.map(currentImage, &gubo, 2);
+                DSb0p0.map(currentImage, &ubo, 0);
+                DSb0p0.map(currentImage, &gubo, 2);
 
 
                 // Update uniforms for the battleship
@@ -898,11 +925,26 @@ protected:
                 ubo.nMat = glm::inverse(glm::transpose(ubo.mMat));
                 ubo.color = glm::vec4(1.0f);
 
-                DSsmallShip.map(currentImage, &ubo, 0);
-                DSsmallShip.map(currentImage, &gubo, 2);
+                DSb1p0.map(currentImage, &ubo, 0);
+                DSb1p0.map(currentImage, &gubo, 2);
 
                 // TODO: mancano le battelship del giocatore 1 e vanno aggiunte mappandole sulla seconda tavola
-                //...
+                ubo.mMat = matrixB[B0P1_x][B0P1_y];
+                ubo.mvpMat = ViewPrj * ubo.mMat;
+                ubo.nMat = glm::inverse(glm::transpose(ubo.mMat));
+                ubo.color = glm::vec4(1.0f);
+
+                DSb0p1.map(currentImage, &ubo, 0);
+                DSb0p1.map(currentImage, &gubo, 2);
+
+                ubo.mMat = matrixB[B1P1_x][B1P1_y];
+                ubo.mvpMat = ViewPrj * ubo.mMat;
+                ubo.nMat = glm::inverse(glm::transpose(ubo.mMat));
+                ubo.color = glm::vec4(1.0f);
+
+                DSb1p1.map(currentImage, &ubo, 0);
+                DSb1p1.map(currentImage, &gubo, 2);
+
                 currentState = WAITING_ATTACK_X;
                 boatVisible = true;
                 break;
@@ -977,13 +1019,17 @@ protected:
                 if (targetX != -1 && targetY != -1) {
                     missileVisible = true;
                     missileTime = 0.0f;  // Reset the missile animation time
-                    if (currPlayer == 0){    
-                        glm::mat4 targetMatrix = matrix[targetX][targetY];
+                    if (currPlayer == 0){  
+                        // TODO - settare l'arrivo in base alla matrice che mappa il secondo tabellone  
+                        glm::mat4 targetMatrix = matrixB[targetX][targetY];
                         glm::vec3 targetPosition = glm::vec3(targetMatrix[3]);
                         missileEndPos = targetPosition;
                     }                
                     else {
-                        // TODO - settare l'arrivo in base alla matrice che mappa il secondo tabellone
+                        
+                        glm::mat4 targetMatrix = matrix[targetX][targetY];
+                        glm::vec3 targetPosition = glm::vec3(targetMatrix[3]);
+                        missileEndPos = targetPosition;
                     }
                     // Reset degli input per il prossimo round
                     h = length(missileEndPos - missileStartPos) * 0.4;
@@ -1079,8 +1125,8 @@ protected:
             ubo.nMat = glm::inverse(glm::transpose(ubo.mMat));
             ubo.color = glm::vec4(1.0f);
 
-            DSBattleship.map(currentImage, &ubo, 0);
-            DSBattleship.map(currentImage, &gubo, 2);
+            DSb0p0.map(currentImage, &ubo, 0);
+            DSb0p0.map(currentImage, &gubo, 2);
 
             // Update uniforms for the battleship
             ubo.mMat = matrix[B1P0_x][B1P0_y];
@@ -1088,11 +1134,25 @@ protected:
             ubo.nMat = glm::inverse(glm::transpose(ubo.mMat));
             ubo.color = glm::vec4(1.0f);
 
-            DSsmallShip.map(currentImage, &ubo, 0);
-            DSsmallShip.map(currentImage, &gubo, 2);
+            DSb1p0.map(currentImage, &ubo, 0);
+            DSb1p0.map(currentImage, &gubo, 2);
 
             // TODO: mancano le battelship del giocatore 1 e vanno aggiunte mappandole sulla seconda tavola
-            //...
+            ubo.mMat = matrixB[B0P1_x][B0P1_y];
+            ubo.mvpMat = ViewPrj * ubo.mMat;
+            ubo.nMat = glm::inverse(glm::transpose(ubo.mMat));
+            ubo.color = glm::vec4(1.0f);
+
+            DSb0p1.map(currentImage, &ubo, 0);
+            DSb0p1.map(currentImage, &gubo, 2);
+
+            ubo.mMat = matrixB[B1P1_x][B1P1_y];
+            ubo.mvpMat = ViewPrj * ubo.mMat;
+            ubo.nMat = glm::inverse(glm::transpose(ubo.mMat));
+            ubo.color = glm::vec4(1.0f);
+
+            DSb1p1.map(currentImage, &ubo, 0);
+            DSb1p1.map(currentImage, &gubo, 2);
         }
         else { // posizioni iniziali causali - TODO: inserire pure quelle del giocatore 2
             ubo.mMat = matrix[1][3];
@@ -1100,8 +1160,8 @@ protected:
             ubo.nMat = glm::inverse(glm::transpose(ubo.mMat));
             ubo.color = glm::vec4(1.0f);
 
-            DSBattleship.map(currentImage, &ubo, 0);
-            DSBattleship.map(currentImage, &gubo, 2);
+            DSb0p0.map(currentImage, &ubo, 0);
+            DSb0p0.map(currentImage, &gubo, 2);
 
             // Update uniforms for the battleship
             ubo.mMat = matrix[8][6];
@@ -1109,8 +1169,25 @@ protected:
             ubo.nMat = glm::inverse(glm::transpose(ubo.mMat));
             ubo.color = glm::vec4(1.0f);
 
-            DSsmallShip.map(currentImage, &ubo, 0);
-            DSsmallShip.map(currentImage, &gubo, 2);
+            DSb1p0.map(currentImage, &ubo, 0);
+            DSb1p0.map(currentImage, &gubo, 2);
+
+            // TODO: mancano le battelship del giocatore 1 e vanno aggiunte mappandole sulla seconda tavola
+            ubo.mMat = matrixB[1][3];
+            ubo.mvpMat = ViewPrj * ubo.mMat;
+            ubo.nMat = glm::inverse(glm::transpose(ubo.mMat));
+            ubo.color = glm::vec4(1.0f);
+
+            DSb0p1.map(currentImage, &ubo, 0);
+            DSb0p1.map(currentImage, &gubo, 2);
+
+            ubo.mMat = matrixB[8][6];
+            ubo.mvpMat = ViewPrj * ubo.mMat;
+            ubo.nMat = glm::inverse(glm::transpose(ubo.mMat));
+            ubo.color = glm::vec4(1.0f);
+
+            DSb1p1.map(currentImage, &ubo, 0);
+            DSb1p1.map(currentImage, &gubo, 2);
         }
 
     }
