@@ -273,7 +273,7 @@ protected:
         TlargePlane.init(this, "textures/water_cropped_grid.jpg");
         Tbattleship.init(this, "textures/Metal.jpg");
         Tmissile.init(this, "textures/missile_texture.jpg");
-        TverticalPlane.init(this, "textures/vertical_plane_texture.jpg");  // Inizializza la texture del piano verticale (sostituisci con il percorso corretto)
+        TverticalPlane.init(this, "textures/texvertplane.jpg");  // Inizializza la texture del piano verticale (sostituisci con il percorso corretto)
 
         // Descriptor pool sizes
         // WARNING!!!!!!!!
