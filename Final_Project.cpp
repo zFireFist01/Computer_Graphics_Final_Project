@@ -463,8 +463,8 @@ protected:
             for (int j = 0; j < T; ++j) {
                 matrix[i][j] = glm::translate(glm::mat4(1.0f), glm::vec3(22.0f * (j - 4), 0.0f, 22.0f * (i - 4)));
                 matrixB[i][j] = glm::translate(glm::mat4(1.0f), glm::vec3(22.0f * (j - 4), 0.0f, 22.0f * (i - 4)));
-                matrixB[i][j] = glm::rotate(matrixB[i][j], glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-                matrixB[i][j] = glm::translate(matrixB[i][j], glm::vec3(100.0f, 0.0f, 0.0f));
+                matrixB[i][j] = glm::rotate(matrixB[i][j], glm::radians(180.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+                matrixB[i][j] = glm::translate(matrixB[i][j], glm::vec3(0.0f, 0.0f, 193.0f));
                 
             }
         }
@@ -1179,7 +1179,7 @@ protected:
             DSb1p0.map(currentImage, &gubo, 2);
 
             // TODO: mancano le battelship del giocatore 1 e vanno aggiunte mappandole sulla seconda tavola
-            ubo.mMat = matrixB[1][3];
+            ubo.mMat = matrixB[0][2];
             ubo.mvpMat = ViewPrj * ubo.mMat;
             ubo.nMat = glm::inverse(glm::transpose(ubo.mMat));
             ubo.color = glm::vec4(1.0f);
@@ -1187,7 +1187,7 @@ protected:
             DSb0p1.map(currentImage, &ubo, 0);
             DSb0p1.map(currentImage, &gubo, 2);
 
-            ubo.mMat = matrixB[8][6];
+            ubo.mMat = matrixB[7][5];
             ubo.mvpMat = ViewPrj * ubo.mMat;
             ubo.nMat = glm::inverse(glm::transpose(ubo.mMat));
             ubo.color = glm::vec4(1.0f);
