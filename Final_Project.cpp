@@ -447,12 +447,14 @@ protected:
         int T = 9;  // Numero di colonne
         // Creiamo una matrice S x T di glm::mat4
         std::vector<std::vector<glm::mat4>> matrix(S, std::vector<glm::mat4>(T));
+        std::vector<std::vector<glm::mat4>> matrixB(S, std::vector<glm::mat4>(T));
 
 
         // Inizializzazione degli elementi della matrice
         for (int i = 0; i < S; ++i) {
             for (int j = 0; j < T; ++j) {
                 matrix[i][j] = glm::mat4(1.0f); // Inizializza ogni glm::mat4 come matrice identità
+                matrixB[i][j] = glm::mat4(1.0f);
             }
         }
 
@@ -460,6 +462,10 @@ protected:
         for (int i = 0; i < S; ++i) {
             for (int j = 0; j < T; ++j) {
                 matrix[i][j] = glm::translate(glm::mat4(1.0f), glm::vec3(22.0f * (j - 4), 0.0f, 22.0f * (i - 4)));
+                matrixB[i][j] = glm::translate(glm::mat4(1.0f), glm::vec3(22.0f * (j - 4), 0.0f, 22.0f * (i - 4)));
+                matrixB[i][j] = glm::rotate(matrixB[i][j], glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+                matrixB[i][j] = glm::translate(matrixB[i][j], glm::vec3(100.0f, 0.0f, 0.0f));
+                
             }
         }
 
@@ -1188,6 +1194,8 @@ protected:
 
             DSb1p1.map(currentImage, &ubo, 0);
             DSb1p1.map(currentImage, &gubo, 2);
+
+            
         }
 
     }
