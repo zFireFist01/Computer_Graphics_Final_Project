@@ -105,9 +105,13 @@ protected:
     Texture TlargePlane;
     DescriptorSet DSPlane;
 
-    Model MverticalPlane;  // Modello per il piano verticale
-    Texture TverticalPlane;  // Texture per il piano verticale
-    DescriptorSet DSVerticalPlane;  // Descriptor set per il piano verticale
+    Model MverticalPlaneA;  // Modello per il piano verticale
+    Texture TverticalPlaneA;  // Texture per il piano verticale
+    DescriptorSet DSVerticalPlaneA;  // Descriptor set per il piano verticale
+
+    Model MverticalPlaneB;  // Modello per il piano verticale
+    Texture TverticalPlaneB;  // Texture per il piano verticale
+    DescriptorSet DSVerticalPlaneB;  // Descriptor set per il piano verticale
 
     Model Mb0p0;
     Texture Tbattleship;
@@ -266,14 +270,16 @@ protected:
         Mb0p1.init(this, &VDBattleship, "models/Warships/Battleship.obj", OBJ);
         Mb1p1.init(this, &VDBattleship, "models/Warships/Battleship.obj", OBJ);
         Mmissile.init(this, &VDBattleship, "models/Missile/missile3.obj", OBJ);
-        MverticalPlane.init(this, &VDPlane, "models/LargePlane3.obj", OBJ);  // Inizializza il modello del piano verticale
+        MverticalPlaneA.init(this, &VDPlane, "models/LargePlane3.obj", OBJ);  // Inizializza il modello del piano verticale
+        MverticalPlaneB.init(this, &VDPlane, "models/LargePlane3.obj", OBJ);  // Inizializza il modello del piano verticale
 
         // Create the textures
         TskyBox.init(this, "textures/starmap_g4k.jpg");
         TlargePlane.init(this, "textures/water_cropped_grid.jpg");
         Tbattleship.init(this, "textures/Metal.jpg");
         Tmissile.init(this, "textures/missile_texture.jpg");
-        TverticalPlane.init(this, "textures/texvertplane.jpg");  // Inizializza la texture del piano verticale (sostituisci con il percorso corretto)
+        TverticalPlaneA.init(this, "textures/texvertplaneA.jpg");  // Inizializza la texture del piano verticale (sostituisci con il percorso corretto)
+        TverticalPlaneB.init(this, "textures/texvertplaneB.jpg");
 
         // Descriptor pool sizes
         // WARNING!!!!!!!!
@@ -308,7 +314,8 @@ protected:
         DSb0p1.init(this, &DSLBattleship, { &Tbattleship });
         DSb1p1.init(this, &DSLBattleship, { &Tbattleship });
         DSmissile.init(this, &DSLBattleship, { &Tmissile });
-        DSVerticalPlane.init(this, &DSLPlane, { &TverticalPlane });  // Inizializza il descriptor set per il piano verticale con la sua texture
+        DSVerticalPlaneA.init(this, &DSLPlane, { &TverticalPlaneA });  // Inizializza il descriptor set per il piano verticale con la sua texture
+        DSVerticalPlaneB.init(this, &DSLPlane, { &TverticalPlaneB });
 
         DSGlobal.init(this, &DSLGlobal, {});
 
@@ -331,7 +338,8 @@ protected:
         DSb1p1.cleanup();
         DSmissile.cleanup();
         DSGlobal.cleanup();
-        DSVerticalPlane.cleanup();
+        DSVerticalPlaneA.cleanup();
+        DSVerticalPlaneB.cleanup();
 
         txt.pipelinesAndDescriptorSetsCleanup();
     }
@@ -353,8 +361,10 @@ protected:
         Mb0p1.cleanup();
         Mb1p1.cleanup();
 
-        TverticalPlane.cleanup();
-        MverticalPlane.cleanup();
+        TverticalPlaneA.cleanup();
+        MverticalPlaneA.cleanup();
+        TverticalPlaneB.cleanup();
+        MverticalPlaneB.cleanup();
 
         Tmissile.cleanup();
         Mmissile.cleanup();
@@ -427,10 +437,12 @@ protected:
         vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(Mmissile.indices.size()), 1, 0, 0, 0);
 
         // Vertical plane
-        MverticalPlane.bind(commandBuffer);
-        DSVerticalPlane.bind(commandBuffer, PPlane, 0, currentImage);
-        vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(MverticalPlane.indices.size()), 1, 0, 0, 0);
-
+        MverticalPlaneA.bind(commandBuffer);
+        DSVerticalPlaneA.bind(commandBuffer, PPlane, 0, currentImage);
+        vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(MverticalPlaneA.indices.size()), 1, 0, 0, 0);
+        MverticalPlaneB.bind(commandBuffer);
+        DSVerticalPlaneB.bind(commandBuffer, PPlane, 0, currentImage);
+        vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(MverticalPlaneB.indices.size()), 1, 0, 0, 0);
 
         txt.populateCommandBuffer(commandBuffer, currentImage, currScene);
     }
@@ -630,7 +642,7 @@ protected:
         DSGlobal.map(currentImage, &gubo, 0);
 
 
-        PlaneUniformBufferObject pubo{};
+       PlaneUniformBufferObject pubo{};
 
         // Update uniforms for the plane
         pubo.mMat[0] = glm::mat4(1.0f);
@@ -651,15 +663,23 @@ protected:
         DSskyBox.map(currentImage, &sbubo, 0);
         
         //For the vertical plane
-        UniformBufferObject uboVerticalPlane{};
+        UniformBufferObject uboVerticalPlaneA{};
+        UniformBufferObject uboVerticalPlaneB{};
+        uboVerticalPlaneA.mMat = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, 0.0f)) * glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+        uboVerticalPlaneA.mvpMat = ViewPrj * uboVerticalPlaneA.mMat;
+        uboVerticalPlaneA.nMat = glm::inverse(glm::transpose(uboVerticalPlaneA.mMat));
+        uboVerticalPlaneA.color = glm::vec4(1.0f);  // Colore del piano verticale
 
-        uboVerticalPlane.mMat = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, 0.0f)) * glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-        uboVerticalPlane.mvpMat = ViewPrj * uboVerticalPlane.mMat;
-        uboVerticalPlane.nMat = glm::inverse(glm::transpose(uboVerticalPlane.mMat));
-        uboVerticalPlane.color = glm::vec4(1.0f);  // Colore del piano verticale
+        uboVerticalPlaneB.mMat = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -1.0f)) * glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+        uboVerticalPlaneB.mvpMat = ViewPrj * uboVerticalPlaneB.mMat;
+        uboVerticalPlaneB.nMat = glm::inverse(glm::transpose(uboVerticalPlaneB.mMat));
+        uboVerticalPlaneB.color = glm::vec4(1.0f);  // Colore del piano verticale
 
-        DSVerticalPlane.map(currentImage, &uboVerticalPlane, 0);
-        DSVerticalPlane.map(currentImage, &gubo, 2);
+        DSVerticalPlaneA.map(currentImage, &uboVerticalPlaneA, 0);
+        DSVerticalPlaneA.map(currentImage, &gubo, 2);
+        DSVerticalPlaneB.map(currentImage, &uboVerticalPlaneB, 0);
+        DSVerticalPlaneB.map(currentImage, &gubo, 2);
+
 
         //FSA che gestisce le fasi di gioco
         switch (currentState) {
