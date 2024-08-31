@@ -30,14 +30,12 @@ enum GameState {
     ANIMATING_MISSILE,
 };
 
-
 struct UniformBufferObject {
     alignas(16) glm::mat4 mvpMat;
     alignas(16) glm::mat4 mMat;
     alignas(16) glm::mat4 nMat;
     alignas(16) glm::vec4 color;
 };
-
 
 struct PlaneUniformBufferObject {
     alignas(16) glm::mat4 mvpMat[NPLANE];
@@ -46,11 +44,9 @@ struct PlaneUniformBufferObject {
     alignas(16) glm::vec4 color[NPLANE];
 };
 
-
 struct skyBoxUniformBufferObject {
     alignas(16) glm::mat4 mvpMat;
 };
-
 
 // The vertices data structures
 struct skyBoxVertex {
@@ -67,7 +63,6 @@ struct Light {
     glm::vec3 position;
     glm::vec3 color;
 };
-
 
 // MAIN ! 
 class FinalProject : public BaseProject {
@@ -95,7 +90,6 @@ protected:
 
     // Models, textures and Descriptor Sets (values assigned to the uniforms)
     DescriptorSet DSGlobal;
-
 
     Model MskyBox;
     Texture TskyBox;
@@ -129,10 +123,6 @@ protected:
     Texture Tmissile;
     DescriptorSet DSmissile;
 
-    //luce
-    Light sunLight = { glm::vec3(-10.0f, -10.0f, -10.0f), glm::vec3(1.0f, 1.0f, 1.0f) };
-
-
     // Other application parameters
     int currScene = 0;
     int subpass = 0;
@@ -155,6 +145,10 @@ protected:
     int B1P0_y = -1;
     int B0P1_y = -1;
     int B1P1_y = -1;
+    bool B0P0Alive = true;
+    bool B1P0Alive = true;
+    bool B0P1Alive = true;
+    bool B1P1Alive = true;
 
     //missile trajectory data
     glm::vec3 missileStartPos = glm::vec3(0.0f, 0.0f, 100.0f);  // Posizione iniziale sopra il piano
@@ -166,18 +160,10 @@ protected:
     GameState currentState = WAITING_BOAT_X;
     int targetX = -1;
     int targetY = -1;
-    bool inputXSet = false;  // True se il targetX è stato inserito
-    bool inputYSet = false;  // True se il targetY è stato inserito
-    bool missileVisible = false; // Determina se deve essere disegnato o meno
+    bool inputXSet = false;  // True se il targetX � stato inserito
+    bool inputYSet = false;  // True se il targetY � stato inserito
     bool boatVisible = false;
-    
-
-    //funzione aggiornamento luce:
-    void updateLightPosition() {
-        sunLight.position.y += 0.1;
-        sunLight.position.x += 0.1;
-        sunLight.position.z += 0.1;
-    }
+    bool isMissileVisible = false;
 
     // Here you set the main application parameters
     void setWindowParameters() {
@@ -283,9 +269,9 @@ protected:
         // Descriptor pool sizes
         // WARNING!!!!!!!!
         // Must be set before initializing the text and the scene
-        DPSZs.uniformBlocksInPool = 20; // prima era 10
-        DPSZs.texturesInPool = 20; // prima era 10
-        DPSZs.setsInPool = 20; // da vedere se vanno aumentati
+        DPSZs.uniformBlocksInPool = 20;
+        DPSZs.texturesInPool = 20;
+        DPSZs.setsInPool = 20;
 
         std::cout << "Initializing text\n";
         txt.init(this, &outText);
@@ -450,8 +436,6 @@ protected:
     void updateUniformBuffer(uint32_t currentImage) {
         static bool debounce = false;
         static int curDebounce = 0;
-        
-        updateLightPosition();
 
         int S = 9;  // Numero di righe
         int T = 9;  // Numero di colonne
@@ -475,7 +459,7 @@ protected:
                 matrixB[i][j] = glm::translate(glm::mat4(1.0f), glm::vec3(22.0f * (j - 4), 0.0f, 22.0f * (i - 4)));
                 matrixB[i][j] = glm::rotate(matrixB[i][j], glm::radians(180.0f), glm::vec3(0.0f, 1.0f, 0.0f));
                 matrixB[i][j] = glm::translate(matrixB[i][j], glm::vec3(0.0f, 0.0f, 193.0f));
-                
+
             }
         }
 
@@ -488,10 +472,8 @@ protected:
         bool fire = false;
         getSixAxis(deltaT, m, r, fire);
 
-
         const float ROT_SPEED = glm::radians(120.0f);
         const float MOVE_SPEED = 30.0f; //If you want to move faster, increase this value
-
 
         // The Fly model update proc.
         CamAlpha = CamAlpha - ROT_SPEED * deltaT * r.y;
@@ -505,9 +487,7 @@ protected:
         CamPos = CamPos + MOVE_SPEED * m.y * glm::vec3(0, 1, 0) * deltaT;
         CamPos = CamPos + MOVE_SPEED * m.z * uz * deltaT;
 
-
         static float subpassTimer = 0.0;
-
 
         if (glfwGetKey(window, GLFW_KEY_SPACE)) {
             if (!debounce) {
@@ -618,7 +598,7 @@ protected:
                 }
             }
         }
-               
+
         // Here is where you actually update your uniforms
         glm::mat4 M = glm::perspective(glm::radians(45.0f), Ar, 0.1f, 1000.0f); // Projection matrix; If you want to see further icrease the last parameter
         M[1][1] *= -1;
@@ -633,14 +613,13 @@ protected:
         // updates global uniforms
         // Global
         GlobalUniformBufferObject gubo{};
-        gubo.lightDir = sunLight.position;
-        gubo.lightColor = glm::vec4(sunLight.color, 1.0f);
+        gubo.lightDir = glm::vec3(cos(glm::radians(135.0f)), sin(glm::radians(135.0f)), 0.0f);
+        gubo.lightColor = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
         gubo.eyePos = glm::vec3(glm::inverse(ViewMatrix) * glm::vec4(0, 0, 0, 1));
         gubo.eyeDir = glm::vec4(0, 0, 0, 1) * ViewMatrix;
         DSGlobal.map(currentImage, &gubo, 0);
 
-
-       PlaneUniformBufferObject pubo{};
+        PlaneUniformBufferObject pubo{};
 
         // Update uniforms for the plane
         pubo.mMat[0] = glm::mat4(1.0f);
@@ -659,7 +638,7 @@ protected:
         skyBoxUniformBufferObject sbubo{};
         sbubo.mvpMat = M * glm::mat4(glm::mat3(Mv));
         DSskyBox.map(currentImage, &sbubo, 0);
-        
+
         //For the vertical plane
         UniformBufferObject uboVerticalPlaneA{};
         UniformBufferObject uboVerticalPlaneB{};
@@ -668,7 +647,7 @@ protected:
         uboVerticalPlaneA.nMat = glm::inverse(glm::transpose(uboVerticalPlaneA.mMat));
         uboVerticalPlaneA.color = glm::vec4(1.0f);  // Colore del piano verticale
 
-        uboVerticalPlaneB.mMat = glm::translate(glm::rotate(glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -1.0f)) * glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f)),glm::radians(180.0f), glm::vec3(0.0f,1.0f,0.0f)), glm::vec3(-194.0f, 0.0f, 0.0f));
+        uboVerticalPlaneB.mMat = glm::translate(glm::rotate(glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -1.0f)) * glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f)), glm::radians(180.0f), glm::vec3(0.0f, 1.0f, 0.0f)), glm::vec3(-194.0f, 0.0f, 0.0f));
         uboVerticalPlaneB.mvpMat = ViewPrj * uboVerticalPlaneB.mMat;
         uboVerticalPlaneB.nMat = glm::inverse(glm::transpose(uboVerticalPlaneB.mMat));
         uboVerticalPlaneB.color = glm::vec4(1.0f);  // Colore del piano verticale
@@ -678,10 +657,10 @@ protected:
         DSVerticalPlaneB.map(currentImage, &uboVerticalPlaneB, 0);
         DSVerticalPlaneB.map(currentImage, &gubo, 2);
 
-
+        UniformBufferObject uboMissile{};
         //FSA che gestisce le fasi di gioco
         switch (currentState) {
-            case WAITING_BOAT_X: {
+        case WAITING_BOAT_X: {
             if (currPlayer == 0) {
                 if (B0P0_x == -1) {
                     if (!debounce) {
@@ -805,344 +784,134 @@ protected:
             break;
         }
 
-            case WAITING_BOAT_Y: {
-                if (currPlayer == 0) {
-                    if (B0P0_y == -1) {
-                        if (!debounce) {
-                            if (glfwGetKey(window, GLFW_KEY_0) == GLFW_PRESS) { B0P0_y = 0; debounce = true; }
-                            if (glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS) { B0P0_y = 1; debounce = true; }
-                            if (glfwGetKey(window, GLFW_KEY_2) == GLFW_PRESS) { B0P0_y = 2; debounce = true; }
-                            if (glfwGetKey(window, GLFW_KEY_3) == GLFW_PRESS) { B0P0_y = 3; debounce = true; }
-                            if (glfwGetKey(window, GLFW_KEY_4) == GLFW_PRESS) { B0P0_y = 4; debounce = true; }
-                            if (glfwGetKey(window, GLFW_KEY_5) == GLFW_PRESS) { B0P0_y = 5; debounce = true; }
-                            if (glfwGetKey(window, GLFW_KEY_6) == GLFW_PRESS) { B0P0_y = 6; debounce = true; }
-                            if (glfwGetKey(window, GLFW_KEY_7) == GLFW_PRESS) { B0P0_y = 7; debounce = true; }
-                            if (glfwGetKey(window, GLFW_KEY_8) == GLFW_PRESS) { B0P0_y = 8; debounce = true; }
+        case WAITING_BOAT_Y: {
+            if (currPlayer == 0) {
+                if (B0P0_y == -1) {
+                    if (!debounce) {
+                        if (glfwGetKey(window, GLFW_KEY_0) == GLFW_PRESS) { B0P0_y = 0; debounce = true; }
+                        if (glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS) { B0P0_y = 1; debounce = true; }
+                        if (glfwGetKey(window, GLFW_KEY_2) == GLFW_PRESS) { B0P0_y = 2; debounce = true; }
+                        if (glfwGetKey(window, GLFW_KEY_3) == GLFW_PRESS) { B0P0_y = 3; debounce = true; }
+                        if (glfwGetKey(window, GLFW_KEY_4) == GLFW_PRESS) { B0P0_y = 4; debounce = true; }
+                        if (glfwGetKey(window, GLFW_KEY_5) == GLFW_PRESS) { B0P0_y = 5; debounce = true; }
+                        if (glfwGetKey(window, GLFW_KEY_6) == GLFW_PRESS) { B0P0_y = 6; debounce = true; }
+                        if (glfwGetKey(window, GLFW_KEY_7) == GLFW_PRESS) { B0P0_y = 7; debounce = true; }
+                        if (glfwGetKey(window, GLFW_KEY_8) == GLFW_PRESS) { B0P0_y = 8; debounce = true; }
 
-                            if (B0P0_y != -1) {
-                                std::cout << "B0P0_y set to: " << B0P0_y << "\n";
-                                currentState = WAITING_BOAT_X;
-                            }
-                        }
-                        if (glfwGetKey(window, GLFW_KEY_0) == GLFW_RELEASE &&
-                            glfwGetKey(window, GLFW_KEY_1) == GLFW_RELEASE &&
-                            glfwGetKey(window, GLFW_KEY_2) == GLFW_RELEASE &&
-                            glfwGetKey(window, GLFW_KEY_3) == GLFW_RELEASE &&
-                            glfwGetKey(window, GLFW_KEY_4) == GLFW_RELEASE &&
-                            glfwGetKey(window, GLFW_KEY_5) == GLFW_RELEASE &&
-                            glfwGetKey(window, GLFW_KEY_6) == GLFW_RELEASE &&
-                            glfwGetKey(window, GLFW_KEY_7) == GLFW_RELEASE &&
-                            glfwGetKey(window, GLFW_KEY_8) == GLFW_RELEASE) {
-                            debounce = false;  // Reset debounce
+                        if (B0P0_y != -1) {
+                            std::cout << "B0P0_y set to: " << B0P0_y << "\n";
+                            currentState = WAITING_BOAT_X;
                         }
                     }
-                    else {
-                        if (!debounce) {
-                            if (glfwGetKey(window, GLFW_KEY_0) == GLFW_PRESS) { B1P0_y = 0; debounce = true; }
-                            if (glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS) { B1P0_y = 1; debounce = true; }
-                            if (glfwGetKey(window, GLFW_KEY_2) == GLFW_PRESS) { B1P0_y = 2; debounce = true; }
-                            if (glfwGetKey(window, GLFW_KEY_3) == GLFW_PRESS) { B1P0_y = 3; debounce = true; }
-                            if (glfwGetKey(window, GLFW_KEY_4) == GLFW_PRESS) { B1P0_y = 4; debounce = true; }
-                            if (glfwGetKey(window, GLFW_KEY_5) == GLFW_PRESS) { B1P0_y = 5; debounce = true; }
-                            if (glfwGetKey(window, GLFW_KEY_6) == GLFW_PRESS) { B1P0_y = 6; debounce = true; }
-                            if (glfwGetKey(window, GLFW_KEY_7) == GLFW_PRESS) { B1P0_y = 7; debounce = true; }
-                            if (glfwGetKey(window, GLFW_KEY_8) == GLFW_PRESS) { B1P0_y = 8; debounce = true; }
-
-                            if (B1P0_y != -1) {
-                                std::cout << "B1P0_y set to: " << B1P0_y << "\n";
-                                currentState = WAITING_BOAT_X;
-                                currPlayer = 1;
-                            }
-                        }
-                        if (glfwGetKey(window, GLFW_KEY_0) == GLFW_RELEASE &&
-                            glfwGetKey(window, GLFW_KEY_1) == GLFW_RELEASE &&
-                            glfwGetKey(window, GLFW_KEY_2) == GLFW_RELEASE &&
-                            glfwGetKey(window, GLFW_KEY_3) == GLFW_RELEASE &&
-                            glfwGetKey(window, GLFW_KEY_4) == GLFW_RELEASE &&
-                            glfwGetKey(window, GLFW_KEY_5) == GLFW_RELEASE &&
-                            glfwGetKey(window, GLFW_KEY_6) == GLFW_RELEASE &&
-                            glfwGetKey(window, GLFW_KEY_7) == GLFW_RELEASE &&
-                            glfwGetKey(window, GLFW_KEY_8) == GLFW_RELEASE) {
-                            debounce = false;  // Reset debounce
-                        }
+                    if (glfwGetKey(window, GLFW_KEY_0) == GLFW_RELEASE &&
+                        glfwGetKey(window, GLFW_KEY_1) == GLFW_RELEASE &&
+                        glfwGetKey(window, GLFW_KEY_2) == GLFW_RELEASE &&
+                        glfwGetKey(window, GLFW_KEY_3) == GLFW_RELEASE &&
+                        glfwGetKey(window, GLFW_KEY_4) == GLFW_RELEASE &&
+                        glfwGetKey(window, GLFW_KEY_5) == GLFW_RELEASE &&
+                        glfwGetKey(window, GLFW_KEY_6) == GLFW_RELEASE &&
+                        glfwGetKey(window, GLFW_KEY_7) == GLFW_RELEASE &&
+                        glfwGetKey(window, GLFW_KEY_8) == GLFW_RELEASE) {
+                        debounce = false;  // Reset debounce
                     }
                 }
                 else {
-                    if (B0P1_y == -1) {
-                        if (!debounce) {
-                            if (glfwGetKey(window, GLFW_KEY_0) == GLFW_PRESS) { B0P1_y = 0; debounce = true; }
-                            if (glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS) { B0P1_y = 1; debounce = true; }
-                            if (glfwGetKey(window, GLFW_KEY_2) == GLFW_PRESS) { B0P1_y = 2; debounce = true; }
-                            if (glfwGetKey(window, GLFW_KEY_3) == GLFW_PRESS) { B0P1_y = 3; debounce = true; }
-                            if (glfwGetKey(window, GLFW_KEY_4) == GLFW_PRESS) { B0P1_y = 4; debounce = true; }
-                            if (glfwGetKey(window, GLFW_KEY_5) == GLFW_PRESS) { B0P1_y = 5; debounce = true; }
-                            if (glfwGetKey(window, GLFW_KEY_6) == GLFW_PRESS) { B0P1_y = 6; debounce = true; }
-                            if (glfwGetKey(window, GLFW_KEY_7) == GLFW_PRESS) { B0P1_y = 7; debounce = true; }
-                            if (glfwGetKey(window, GLFW_KEY_8) == GLFW_PRESS) { B0P1_y = 8; debounce = true; }
+                    if (!debounce) {
+                        if (glfwGetKey(window, GLFW_KEY_0) == GLFW_PRESS) { B1P0_y = 0; debounce = true; }
+                        if (glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS) { B1P0_y = 1; debounce = true; }
+                        if (glfwGetKey(window, GLFW_KEY_2) == GLFW_PRESS) { B1P0_y = 2; debounce = true; }
+                        if (glfwGetKey(window, GLFW_KEY_3) == GLFW_PRESS) { B1P0_y = 3; debounce = true; }
+                        if (glfwGetKey(window, GLFW_KEY_4) == GLFW_PRESS) { B1P0_y = 4; debounce = true; }
+                        if (glfwGetKey(window, GLFW_KEY_5) == GLFW_PRESS) { B1P0_y = 5; debounce = true; }
+                        if (glfwGetKey(window, GLFW_KEY_6) == GLFW_PRESS) { B1P0_y = 6; debounce = true; }
+                        if (glfwGetKey(window, GLFW_KEY_7) == GLFW_PRESS) { B1P0_y = 7; debounce = true; }
+                        if (glfwGetKey(window, GLFW_KEY_8) == GLFW_PRESS) { B1P0_y = 8; debounce = true; }
 
-                            if (B0P1_y != -1) {
-                                std::cout << "B0P1_y set to: " << B0P1_y << "\n";
-                                currentState = WAITING_BOAT_X;
-                            }
-                        }
-                        if (glfwGetKey(window, GLFW_KEY_0) == GLFW_RELEASE &&
-                            glfwGetKey(window, GLFW_KEY_1) == GLFW_RELEASE &&
-                            glfwGetKey(window, GLFW_KEY_2) == GLFW_RELEASE &&
-                            glfwGetKey(window, GLFW_KEY_3) == GLFW_RELEASE &&
-                            glfwGetKey(window, GLFW_KEY_4) == GLFW_RELEASE &&
-                            glfwGetKey(window, GLFW_KEY_5) == GLFW_RELEASE &&
-                            glfwGetKey(window, GLFW_KEY_6) == GLFW_RELEASE &&
-                            glfwGetKey(window, GLFW_KEY_7) == GLFW_RELEASE &&
-                            glfwGetKey(window, GLFW_KEY_8) == GLFW_RELEASE) {
-                            debounce = false;  // Reset debounce
+                        if (B1P0_y != -1) {
+                            std::cout << "B1P0_y set to: " << B1P0_y << "\n";
+                            currentState = WAITING_BOAT_X;
+                            currPlayer = 1;
                         }
                     }
-                    else {
-                        if (!debounce) {
-                            if (glfwGetKey(window, GLFW_KEY_0) == GLFW_PRESS) { B1P1_y = 0; debounce = true; }
-                            if (glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS) { B1P1_y = 1; debounce = true; }
-                            if (glfwGetKey(window, GLFW_KEY_2) == GLFW_PRESS) { B1P1_y = 2; debounce = true; }
-                            if (glfwGetKey(window, GLFW_KEY_3) == GLFW_PRESS) { B1P1_y = 3; debounce = true; }
-                            if (glfwGetKey(window, GLFW_KEY_4) == GLFW_PRESS) { B1P1_y = 4; debounce = true; }
-                            if (glfwGetKey(window, GLFW_KEY_5) == GLFW_PRESS) { B1P1_y = 5; debounce = true; }
-                            if (glfwGetKey(window, GLFW_KEY_6) == GLFW_PRESS) { B1P1_y = 6; debounce = true; }
-                            if (glfwGetKey(window, GLFW_KEY_7) == GLFW_PRESS) { B1P1_y = 7; debounce = true; }
-                            if (glfwGetKey(window, GLFW_KEY_8) == GLFW_PRESS) { B1P1_y = 8; debounce = true; }
+                    if (glfwGetKey(window, GLFW_KEY_0) == GLFW_RELEASE &&
+                        glfwGetKey(window, GLFW_KEY_1) == GLFW_RELEASE &&
+                        glfwGetKey(window, GLFW_KEY_2) == GLFW_RELEASE &&
+                        glfwGetKey(window, GLFW_KEY_3) == GLFW_RELEASE &&
+                        glfwGetKey(window, GLFW_KEY_4) == GLFW_RELEASE &&
+                        glfwGetKey(window, GLFW_KEY_5) == GLFW_RELEASE &&
+                        glfwGetKey(window, GLFW_KEY_6) == GLFW_RELEASE &&
+                        glfwGetKey(window, GLFW_KEY_7) == GLFW_RELEASE &&
+                        glfwGetKey(window, GLFW_KEY_8) == GLFW_RELEASE) {
+                        debounce = false;  // Reset debounce
+                    }
+                }
+            }
+            else {
+                if (B0P1_y == -1) {
+                    if (!debounce) {
+                        if (glfwGetKey(window, GLFW_KEY_0) == GLFW_PRESS) { B0P1_y = 0; debounce = true; }
+                        if (glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS) { B0P1_y = 1; debounce = true; }
+                        if (glfwGetKey(window, GLFW_KEY_2) == GLFW_PRESS) { B0P1_y = 2; debounce = true; }
+                        if (glfwGetKey(window, GLFW_KEY_3) == GLFW_PRESS) { B0P1_y = 3; debounce = true; }
+                        if (glfwGetKey(window, GLFW_KEY_4) == GLFW_PRESS) { B0P1_y = 4; debounce = true; }
+                        if (glfwGetKey(window, GLFW_KEY_5) == GLFW_PRESS) { B0P1_y = 5; debounce = true; }
+                        if (glfwGetKey(window, GLFW_KEY_6) == GLFW_PRESS) { B0P1_y = 6; debounce = true; }
+                        if (glfwGetKey(window, GLFW_KEY_7) == GLFW_PRESS) { B0P1_y = 7; debounce = true; }
+                        if (glfwGetKey(window, GLFW_KEY_8) == GLFW_PRESS) { B0P1_y = 8; debounce = true; }
 
-                            if (B1P1_y != -1) {
-                                std::cout << "B1P1_y set to: " << B1P1_y << "\n";
-                                currentState = PROCESSING_BOAT_INPUT;
-                                currPlayer = 0;
-                            }
+                        if (B0P1_y != -1) {
+                            std::cout << "B0P1_y set to: " << B0P1_y << "\n";
+                            currentState = WAITING_BOAT_X;
                         }
-                        if (glfwGetKey(window, GLFW_KEY_0) == GLFW_RELEASE &&
-                            glfwGetKey(window, GLFW_KEY_1) == GLFW_RELEASE &&
-                            glfwGetKey(window, GLFW_KEY_2) == GLFW_RELEASE &&
-                            glfwGetKey(window, GLFW_KEY_3) == GLFW_RELEASE &&
-                            glfwGetKey(window, GLFW_KEY_4) == GLFW_RELEASE &&
-                            glfwGetKey(window, GLFW_KEY_5) == GLFW_RELEASE &&
-                            glfwGetKey(window, GLFW_KEY_6) == GLFW_RELEASE &&
-                            glfwGetKey(window, GLFW_KEY_7) == GLFW_RELEASE &&
-                            glfwGetKey(window, GLFW_KEY_8) == GLFW_RELEASE) {
-                            debounce = false;  // Reset debounce
+                    }
+                    if (glfwGetKey(window, GLFW_KEY_0) == GLFW_RELEASE &&
+                        glfwGetKey(window, GLFW_KEY_1) == GLFW_RELEASE &&
+                        glfwGetKey(window, GLFW_KEY_2) == GLFW_RELEASE &&
+                        glfwGetKey(window, GLFW_KEY_3) == GLFW_RELEASE &&
+                        glfwGetKey(window, GLFW_KEY_4) == GLFW_RELEASE &&
+                        glfwGetKey(window, GLFW_KEY_5) == GLFW_RELEASE &&
+                        glfwGetKey(window, GLFW_KEY_6) == GLFW_RELEASE &&
+                        glfwGetKey(window, GLFW_KEY_7) == GLFW_RELEASE &&
+                        glfwGetKey(window, GLFW_KEY_8) == GLFW_RELEASE) {
+                        debounce = false;  // Reset debounce
+                    }
+                }
+                else {
+                    if (!debounce) {
+                        if (glfwGetKey(window, GLFW_KEY_0) == GLFW_PRESS) { B1P1_y = 0; debounce = true; }
+                        if (glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS) { B1P1_y = 1; debounce = true; }
+                        if (glfwGetKey(window, GLFW_KEY_2) == GLFW_PRESS) { B1P1_y = 2; debounce = true; }
+                        if (glfwGetKey(window, GLFW_KEY_3) == GLFW_PRESS) { B1P1_y = 3; debounce = true; }
+                        if (glfwGetKey(window, GLFW_KEY_4) == GLFW_PRESS) { B1P1_y = 4; debounce = true; }
+                        if (glfwGetKey(window, GLFW_KEY_5) == GLFW_PRESS) { B1P1_y = 5; debounce = true; }
+                        if (glfwGetKey(window, GLFW_KEY_6) == GLFW_PRESS) { B1P1_y = 6; debounce = true; }
+                        if (glfwGetKey(window, GLFW_KEY_7) == GLFW_PRESS) { B1P1_y = 7; debounce = true; }
+                        if (glfwGetKey(window, GLFW_KEY_8) == GLFW_PRESS) { B1P1_y = 8; debounce = true; }
+
+                        if (B1P1_y != -1) {
+                            std::cout << "B1P1_y set to: " << B1P1_y << "\n";
+                            currentState = PROCESSING_BOAT_INPUT;
+                            currPlayer = 0;
                         }
                     }
-                }
-                break;
-            }
-
-            case PROCESSING_BOAT_INPUT: {
-                UniformBufferObject ubo{};
-                // Update uniforms for the battleship
-                ubo.mMat = matrix[B0P0_x][B0P0_y];
-                ubo.mvpMat = ViewPrj * ubo.mMat;
-                ubo.nMat = glm::inverse(glm::transpose(ubo.mMat));
-                ubo.color = glm::vec4(1.0f);
-
-                DSb0p0.map(currentImage, &ubo, 0);
-                DSb0p0.map(currentImage, &gubo, 2);
-
-
-                // Update uniforms for the battleship
-                ubo.mMat = matrix[B1P0_x][B1P0_y];
-                ubo.mvpMat = ViewPrj * ubo.mMat;
-                ubo.nMat = glm::inverse(glm::transpose(ubo.mMat));
-                ubo.color = glm::vec4(1.0f);
-
-                DSb1p0.map(currentImage, &ubo, 0);
-                DSb1p0.map(currentImage, &gubo, 2);
-
-                // TODO: mancano le battelship del giocatore 1 e vanno aggiunte mappandole sulla seconda tavola
-                ubo.mMat = matrixB[B0P1_x][B0P1_y];
-                ubo.mvpMat = ViewPrj * ubo.mMat;
-                ubo.nMat = glm::inverse(glm::transpose(ubo.mMat));
-                ubo.color = glm::vec4(1.0f);
-
-                DSb0p1.map(currentImage, &ubo, 0);
-                DSb0p1.map(currentImage, &gubo, 2);
-
-                ubo.mMat = matrixB[B1P1_x][B1P1_y];
-                ubo.mvpMat = ViewPrj * ubo.mMat;
-                ubo.nMat = glm::inverse(glm::transpose(ubo.mMat));
-                ubo.color = glm::vec4(1.0f);
-
-                DSb1p1.map(currentImage, &ubo, 0);
-                DSb1p1.map(currentImage, &gubo, 2);
-
-                currentState = WAITING_ATTACK_X;
-                boatVisible = true;
-                break;
-            }
-
-            case WAITING_ATTACK_X: {
-                if (!debounce) {
-                    if (glfwGetKey(window, GLFW_KEY_0) == GLFW_PRESS) { targetX = 0; debounce = true; }
-                    if (glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS) { targetX = 1; debounce = true; }
-                    if (glfwGetKey(window, GLFW_KEY_2) == GLFW_PRESS) { targetX = 2; debounce = true; }
-                    if (glfwGetKey(window, GLFW_KEY_3) == GLFW_PRESS) { targetX = 3; debounce = true; }
-                    if (glfwGetKey(window, GLFW_KEY_4) == GLFW_PRESS) { targetX = 4; debounce = true; }
-                    if (glfwGetKey(window, GLFW_KEY_5) == GLFW_PRESS) { targetX = 5; debounce = true; }
-                    if (glfwGetKey(window, GLFW_KEY_6) == GLFW_PRESS) { targetX = 6; debounce = true; }
-                    if (glfwGetKey(window, GLFW_KEY_7) == GLFW_PRESS) { targetX = 7; debounce = true; }
-                    if (glfwGetKey(window, GLFW_KEY_8) == GLFW_PRESS) { targetX = 8; debounce = true; }
-
-                    if (targetX != -1) {
-                        inputXSet = true;  // La coordinata X è stata inserita
-                        std::cout << "X set to: " << targetX << "\n";
-                        currentState = WAITING_ATTACK_Y;
+                    if (glfwGetKey(window, GLFW_KEY_0) == GLFW_RELEASE &&
+                        glfwGetKey(window, GLFW_KEY_1) == GLFW_RELEASE &&
+                        glfwGetKey(window, GLFW_KEY_2) == GLFW_RELEASE &&
+                        glfwGetKey(window, GLFW_KEY_3) == GLFW_RELEASE &&
+                        glfwGetKey(window, GLFW_KEY_4) == GLFW_RELEASE &&
+                        glfwGetKey(window, GLFW_KEY_5) == GLFW_RELEASE &&
+                        glfwGetKey(window, GLFW_KEY_6) == GLFW_RELEASE &&
+                        glfwGetKey(window, GLFW_KEY_7) == GLFW_RELEASE &&
+                        glfwGetKey(window, GLFW_KEY_8) == GLFW_RELEASE) {
+                        debounce = false;  // Reset debounce
                     }
                 }
-                if (glfwGetKey(window, GLFW_KEY_0) == GLFW_RELEASE &&
-                    glfwGetKey(window, GLFW_KEY_1) == GLFW_RELEASE &&
-                    glfwGetKey(window, GLFW_KEY_2) == GLFW_RELEASE &&
-                    glfwGetKey(window, GLFW_KEY_3) == GLFW_RELEASE &&
-                    glfwGetKey(window, GLFW_KEY_4) == GLFW_RELEASE &&
-                    glfwGetKey(window, GLFW_KEY_5) == GLFW_RELEASE &&
-                    glfwGetKey(window, GLFW_KEY_6) == GLFW_RELEASE &&
-                    glfwGetKey(window, GLFW_KEY_7) == GLFW_RELEASE &&
-                    glfwGetKey(window, GLFW_KEY_8) == GLFW_RELEASE) {
-                    debounce = false;  // Reset debounce
-                }
-                break;
-
             }
-                
-            case WAITING_ATTACK_Y: {
-                if (!debounce) {
-                    if (glfwGetKey(window, GLFW_KEY_0) == GLFW_PRESS) { targetY = 0; debounce = true; }
-                    if (glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS) { targetY = 1; debounce = true; }
-                    if (glfwGetKey(window, GLFW_KEY_2) == GLFW_PRESS) { targetY = 2; debounce = true; }
-                    if (glfwGetKey(window, GLFW_KEY_3) == GLFW_PRESS) { targetY = 3; debounce = true; }
-                    if (glfwGetKey(window, GLFW_KEY_4) == GLFW_PRESS) { targetY = 4; debounce = true; }
-                    if (glfwGetKey(window, GLFW_KEY_5) == GLFW_PRESS) { targetY = 5; debounce = true; }
-                    if (glfwGetKey(window, GLFW_KEY_6) == GLFW_PRESS) { targetY = 6; debounce = true; }
-                    if (glfwGetKey(window, GLFW_KEY_7) == GLFW_PRESS) { targetY = 7; debounce = true; }
-                    if (glfwGetKey(window, GLFW_KEY_8) == GLFW_PRESS) { targetY = 8; debounce = true; }
-
-                    if (targetY != -1) {
-                        inputYSet = true;  // La coordinata Y è stata inserita
-                        std::cout << "Y set to: " << targetY << "\n";
-                        currentState = PROCESSING_ATTACK_INPUT;
-                    }
-                }
-                if (glfwGetKey(window, GLFW_KEY_0) == GLFW_RELEASE &&
-                    glfwGetKey(window, GLFW_KEY_1) == GLFW_RELEASE &&
-                    glfwGetKey(window, GLFW_KEY_2) == GLFW_RELEASE &&
-                    glfwGetKey(window, GLFW_KEY_3) == GLFW_RELEASE &&
-                    glfwGetKey(window, GLFW_KEY_4) == GLFW_RELEASE &&
-                    glfwGetKey(window, GLFW_KEY_5) == GLFW_RELEASE &&
-                    glfwGetKey(window, GLFW_KEY_6) == GLFW_RELEASE &&
-                    glfwGetKey(window, GLFW_KEY_7) == GLFW_RELEASE &&
-                    glfwGetKey(window, GLFW_KEY_8) == GLFW_RELEASE) {
-                    debounce = false;  // Reset debounce
-                }
-                break;
-            }
-                
-            case PROCESSING_ATTACK_INPUT: {
-                if (targetX != -1 && targetY != -1) {
-                    missileVisible = true;
-                    missileTime = 0.0f;  // Reset the missile animation time
-                    if (currPlayer == 0){  
-                        // TODO - settare l'arrivo in base alla matrice che mappa il secondo tabellone  
-                        glm::mat4 targetMatrix = matrixB[targetX][targetY];
-                        glm::vec3 targetPosition = glm::vec3(targetMatrix[3]);
-                        missileEndPos = targetPosition;
-                    }                
-                    else {
-                        
-                        glm::mat4 targetMatrix = matrix[targetX][targetY];
-                        glm::vec3 targetPosition = glm::vec3(targetMatrix[3]);
-                        missileEndPos = targetPosition;
-                    }
-                    // Reset degli input per il prossimo round
-                    h = length(missileEndPos - missileStartPos) * 0.4;
-                    inputXSet = false;
-                    inputYSet = false;
-                    targetX = -1;
-                    targetY = -1;
-                    currentState = ANIMATING_MISSILE;
-                }
-                break;
-            }
-                
-            case ANIMATING_MISSILE: {
-                if (missileVisible) {
-
-                    // Aggiorna la posizione del missile
-                    missileTime += deltaT / totalTime; // Aggiorna il tempo normalizzato (0 -> 1)
-
-                    // Clamp del tempo per assicurarsi che rimanga nell'intervallo [0, 1]
-                    missileTime = glm::clamp(missileTime, 0.0f, 1.0f);
-
-                    // Calcola la nuova posizione del missile
-                    float t = missileTime;
-                    float x = missileStartPos.x + t * (missileEndPos.x - missileStartPos.x);
-                    float y = missileStartPos.y + 4 * h * t * (1.0f - t);  // Vertical component for the parabolic arc
-                    float z = missileStartPos.z + t * (missileEndPos.z - missileStartPos.z);  // Horizontal direction
-
-                    missilePos = glm::vec3(x, y, z);
-
-                    glm::vec3 velocity = glm::normalize(glm::vec3(
-                        missileEndPos.x - missileStartPos.x,
-                        4 * h * (1.0f - 2.0f * t),  // Derivative of the vertical parabolic function
-                        missileEndPos.z - missileStartPos.z
-                    ));
-
-                    // Calculate the right vector using a cross product with an up vector
-                    glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f);  // Up vector
-                    glm::vec3 right = glm::normalize(glm::cross(up, velocity));
-
-                    // Recalculate the up vector to ensure orthogonality
-                    up = glm::normalize(glm::cross(velocity, right));
-
-                    // Create the rotation matrix to orient the missile
-                    glm::mat4 rotationMatrix = glm::mat4(glm::vec4(right, 0.0f),
-                        glm::vec4(up, 0.0f),
-                        glm::vec4(velocity, 0.0f),
-                        glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
-
-                    // Create the transformation matrix for the missile
-                    glm::mat4 translationMatrix = glm::translate(glm::mat4(1.0f), missilePos);
-                    glm::mat4 modelMatrix = translationMatrix * rotationMatrix;
-
-                    // Se il missile ha raggiunto il punto finale, ferma l'animazione
-                    if (missileTime >= 1.0f || glm::length(missilePos - missileEndPos) < 0.1) {
-                        missileVisible = false;  // Nascondi il missile
-                        missilePos = missileStartPos;
-                        currPlayer = (currPlayer + 1) % 2;
-                        missileStartPos = glm::vec3(0.0f, 0.0f, 100.0f + (-400.0f * currPlayer));
-                        std::cout << "currentPlayer = " << currPlayer << '\n';
-                        currentState = WAITING_ATTACK_X;  // Torna allo stato di attesa per nuove coordinate
-                        if (currPlayer == 1) {
-                            CamPos = glm::vec3(0.0f, 50.0f, -300.0f);  // Posizione dietro al vertical plane
-                            ViewMatrix = glm::lookAt(CamPos, glm::vec3(0.0f, 50.0f, 100.0f), glm::vec3(0.0f, 1.0f, 0.0f));  // TODO: non guarda verso il piano verticale
-                        }
-                        else {
-                            CamPos = glm::vec3(0.0f, 50.0f, 100.0f);
-                            ViewMatrix = glm::lookAt(CamPos, glm::vec3(0.0f, 50.0f, -300.0f), glm::vec3(0.0f, 1.0f, 0.0f)); // TODO: non guarda verso il piano verticale
-                        }
-                    } else {
-                        CamPos = missilePos + glm::vec3(0.0f, 4.0f, 0.0f);
-                        glm::vec3 cameraTarget = missilePos + velocity;
-                        ViewMatrix = glm::lookAt(CamPos, cameraTarget, up);
-                        // Update the uniform buffer for the missile
-                        UniformBufferObject uboMissile{};
-                        uboMissile.mMat = modelMatrix;  // Apply the transformation
-                        uboMissile.mvpMat = ViewPrj * uboMissile.mMat;
-                        uboMissile.nMat = glm::inverse(glm::transpose(uboMissile.mMat));
-                        uboMissile.color = glm::vec4(1.0f);
-
-                        DSmissile.map(currentImage, &uboMissile, 0);
-                        DSmissile.map(currentImage, &gubo, 2);
-                    }
-                    break;
-                }
-            }
+            break;
         }
-        
-        UniformBufferObject ubo{};
-        if (boatVisible) {
+
+        case PROCESSING_BOAT_INPUT: {
+            UniformBufferObject ubo{};
             // Update uniforms for the battleship
             ubo.mMat = matrix[B0P0_x][B0P0_y];
             ubo.mvpMat = ViewPrj * ubo.mMat;
@@ -1151,6 +920,7 @@ protected:
 
             DSb0p0.map(currentImage, &ubo, 0);
             DSb0p0.map(currentImage, &gubo, 2);
+
 
             // Update uniforms for the battleship
             ubo.mMat = matrix[B1P0_x][B1P0_y];
@@ -1171,6 +941,265 @@ protected:
             DSb0p1.map(currentImage, &gubo, 2);
 
             ubo.mMat = matrixB[B1P1_x][B1P1_y];
+            ubo.mvpMat = ViewPrj * ubo.mMat;
+            ubo.nMat = glm::inverse(glm::transpose(ubo.mMat));
+            ubo.color = glm::vec4(1.0f);
+
+            DSb1p1.map(currentImage, &ubo, 0);
+            DSb1p1.map(currentImage, &gubo, 2);
+
+            currentState = WAITING_ATTACK_X;
+            boatVisible = true;
+            break;
+        }
+
+        case WAITING_ATTACK_X: {
+            if (!debounce) {
+                if (glfwGetKey(window, GLFW_KEY_0) == GLFW_PRESS) { targetX = 0; debounce = true; }
+                if (glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS) { targetX = 1; debounce = true; }
+                if (glfwGetKey(window, GLFW_KEY_2) == GLFW_PRESS) { targetX = 2; debounce = true; }
+                if (glfwGetKey(window, GLFW_KEY_3) == GLFW_PRESS) { targetX = 3; debounce = true; }
+                if (glfwGetKey(window, GLFW_KEY_4) == GLFW_PRESS) { targetX = 4; debounce = true; }
+                if (glfwGetKey(window, GLFW_KEY_5) == GLFW_PRESS) { targetX = 5; debounce = true; }
+                if (glfwGetKey(window, GLFW_KEY_6) == GLFW_PRESS) { targetX = 6; debounce = true; }
+                if (glfwGetKey(window, GLFW_KEY_7) == GLFW_PRESS) { targetX = 7; debounce = true; }
+                if (glfwGetKey(window, GLFW_KEY_8) == GLFW_PRESS) { targetX = 8; debounce = true; }
+
+                if (targetX != -1) {
+                    inputXSet = true;  // La coordinata X è stata inserita
+                    std::cout << "X set to: " << targetX << "\n";
+                    currentState = WAITING_ATTACK_Y;
+                }
+            }
+            if (glfwGetKey(window, GLFW_KEY_0) == GLFW_RELEASE &&
+                glfwGetKey(window, GLFW_KEY_1) == GLFW_RELEASE &&
+                glfwGetKey(window, GLFW_KEY_2) == GLFW_RELEASE &&
+                glfwGetKey(window, GLFW_KEY_3) == GLFW_RELEASE &&
+                glfwGetKey(window, GLFW_KEY_4) == GLFW_RELEASE &&
+                glfwGetKey(window, GLFW_KEY_5) == GLFW_RELEASE &&
+                glfwGetKey(window, GLFW_KEY_6) == GLFW_RELEASE &&
+                glfwGetKey(window, GLFW_KEY_7) == GLFW_RELEASE &&
+                glfwGetKey(window, GLFW_KEY_8) == GLFW_RELEASE) {
+                debounce = false;  // Reset debounce
+            }
+            break;
+
+        }
+
+        case WAITING_ATTACK_Y: {
+            if (!debounce) {
+                if (glfwGetKey(window, GLFW_KEY_0) == GLFW_PRESS) { targetY = 0; debounce = true; }
+                if (glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS) { targetY = 1; debounce = true; }
+                if (glfwGetKey(window, GLFW_KEY_2) == GLFW_PRESS) { targetY = 2; debounce = true; }
+                if (glfwGetKey(window, GLFW_KEY_3) == GLFW_PRESS) { targetY = 3; debounce = true; }
+                if (glfwGetKey(window, GLFW_KEY_4) == GLFW_PRESS) { targetY = 4; debounce = true; }
+                if (glfwGetKey(window, GLFW_KEY_5) == GLFW_PRESS) { targetY = 5; debounce = true; }
+                if (glfwGetKey(window, GLFW_KEY_6) == GLFW_PRESS) { targetY = 6; debounce = true; }
+                if (glfwGetKey(window, GLFW_KEY_7) == GLFW_PRESS) { targetY = 7; debounce = true; }
+                if (glfwGetKey(window, GLFW_KEY_8) == GLFW_PRESS) { targetY = 8; debounce = true; }
+
+                if (targetY != -1) {
+                    inputYSet = true;  // La coordinata Y è stata inserita
+                    std::cout << "Y set to: " << targetY << "\n";
+                    currentState = PROCESSING_ATTACK_INPUT;
+                }
+            }
+            if (glfwGetKey(window, GLFW_KEY_0) == GLFW_RELEASE &&
+                glfwGetKey(window, GLFW_KEY_1) == GLFW_RELEASE &&
+                glfwGetKey(window, GLFW_KEY_2) == GLFW_RELEASE &&
+                glfwGetKey(window, GLFW_KEY_3) == GLFW_RELEASE &&
+                glfwGetKey(window, GLFW_KEY_4) == GLFW_RELEASE &&
+                glfwGetKey(window, GLFW_KEY_5) == GLFW_RELEASE &&
+                glfwGetKey(window, GLFW_KEY_6) == GLFW_RELEASE &&
+                glfwGetKey(window, GLFW_KEY_7) == GLFW_RELEASE &&
+                glfwGetKey(window, GLFW_KEY_8) == GLFW_RELEASE) {
+                debounce = false;  // Reset debounce
+            }
+            break;
+        }
+
+        case PROCESSING_ATTACK_INPUT: {
+            if (targetX != -1 && targetY != -1) {
+                missileTime = 0.0f;  // Reset the missile animation time
+                if (currPlayer == 0) {
+                    // TODO - settare l'arrivo in base alla matrice che mappa il secondo tabellone  
+                    glm::mat4 targetMatrix = matrixB[targetX][targetY];
+                    glm::vec3 targetPosition = glm::vec3(targetMatrix[3]);
+                    missileEndPos = targetPosition;
+                }
+                else {
+
+                    glm::mat4 targetMatrix = matrix[targetX][targetY];
+                    glm::vec3 targetPosition = glm::vec3(targetMatrix[3]);
+                    missileEndPos = targetPosition;
+                }
+                // Reset degli input per il prossimo round
+                h = length(missileEndPos - missileStartPos) * 0.4;
+                currentState = ANIMATING_MISSILE;
+            }
+            break;
+        }
+
+        case ANIMATING_MISSILE: {
+            isMissileVisible = true;
+
+            //Start position function
+            missileStartPos = glm::vec3(0.0f, 0.0f, 100.0f + (-400.0f * currPlayer));
+
+            // Aggiorna la posizione del missile
+            missileTime += deltaT / totalTime; // Aggiorna il tempo normalizzato (0 -> 1)
+
+            // Clamp del tempo per assicurarsi che rimanga nell'intervallo [0, 1]
+            missileTime = glm::clamp(missileTime, 0.0f, 1.0f);
+
+            // Calcola la nuova posizione del missile
+            float t = missileTime;
+            float x = missileStartPos.x + t * (missileEndPos.x - missileStartPos.x);
+            float y = missileStartPos.y + 4 * h * t * (1.0f - t);  // Vertical component for the parabolic arc
+            float z = missileStartPos.z + t * (missileEndPos.z - missileStartPos.z);  // Horizontal direction
+
+            missilePos = glm::vec3(x, y, z);
+
+            glm::vec3 velocity = glm::normalize(glm::vec3(
+                missileEndPos.x - missileStartPos.x,
+                4 * h * (1.0f - 2.0f * t),  // Derivative of the vertical parabolic function
+                missileEndPos.z - missileStartPos.z
+            ));
+
+            // Calculate the right vector using a cross product with an up vector
+            glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f);  // Up vector
+            glm::vec3 right = glm::normalize(glm::cross(up, velocity));
+
+            // Recalculate the up vector to ensure orthogonality
+            up = glm::normalize(glm::cross(velocity, right));
+
+            // Create the rotation matrix to orient the missile
+            glm::mat4 rotationMatrix = glm::mat4(glm::vec4(right, 0.0f),
+                glm::vec4(up, 0.0f),
+                glm::vec4(velocity, 0.0f),
+                glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
+
+            // Create the transformation matrix for the missile
+            glm::mat4 translationMatrix = glm::translate(glm::mat4(1.0f), missilePos);
+            glm::mat4 modelMatrix = translationMatrix * rotationMatrix;
+
+            // Se il missile ha raggiunto il punto finale, ferma l'animazione
+            if (missileTime >= 1.0f || glm::length(missilePos - missileEndPos) < 0.1) {
+                missilePos = glm::vec3(0.0f, -100.0f, 0.0f);
+                translationMatrix = glm::translate(glm::mat4(1.0f), missilePos);
+                modelMatrix = translationMatrix * rotationMatrix;
+                uboMissile.mMat = modelMatrix;  // Apply the transformation
+                uboMissile.mvpMat = ViewPrj * uboMissile.mMat;
+                uboMissile.nMat = glm::inverse(glm::transpose(uboMissile.mMat));
+                uboMissile.color = glm::vec4(1.0f);
+
+                isMissileVisible = false;
+                currPlayer = (currPlayer + 1) % 2;
+                std::cout << "currentPlayer = " << currPlayer << '\n';
+                currentState = WAITING_ATTACK_X;  // Torna allo stato di attesa per nuove coordinate
+                if (currPlayer == 1) {
+                    CamPos = glm::vec3(0.0f, 50.0f, -300.0f);  // Posizione dietro al vertical plane
+                    ViewMatrix = glm::lookAt(CamPos, glm::vec3(0.0f, 50.0f, 100.0f), glm::vec3(0.0f, 1.0f, 0.0f));  // TODO: non guarda verso il piano verticale
+                    if (targetX == B0P1_x && targetY == B0P1_y) {
+                        B0P1Alive = false;
+                    }
+                    else if (targetX == B1P1_x && targetY == B1P1_y) {
+                        B1P1Alive = false;
+
+                    }
+                }
+                else {
+                    CamPos = glm::vec3(0.0f, 50.0f, 100.0f);
+                    ViewMatrix = glm::lookAt(CamPos, glm::vec3(0.0f, 50.0f, -300.0f), glm::vec3(0.0f, 1.0f, 0.0f)); // TODO: non guarda verso il piano verticale
+                    if (targetX == B0P0_x && targetY == B0P0_y) {
+                        B0P0Alive = false;
+                    }
+                    else if (targetX == B1P0_x && targetY == B1P0_y) {
+                        B1P0Alive = false;
+                    }
+                }
+                inputXSet = false;
+                inputYSet = false;
+                targetX = -1;
+                targetY = -1;
+            }
+            else {
+                CamPos = missilePos + glm::vec3(0.0f, 4.0f, 0.0f);
+                glm::vec3 cameraTarget = missilePos + velocity;
+                ViewMatrix = glm::lookAt(CamPos, cameraTarget, up);
+                // Update the uniform buffer for the missile
+                uboMissile.mMat = modelMatrix;  // Apply the transformation
+                uboMissile.mvpMat = ViewPrj * uboMissile.mMat;
+                uboMissile.nMat = glm::inverse(glm::transpose(uboMissile.mMat));
+                uboMissile.color = glm::vec4(1.0f);
+
+                DSmissile.map(currentImage, &uboMissile, 0);
+                DSmissile.map(currentImage, &gubo, 2);
+            }
+            break;
+        }
+
+        }
+
+        // renderizza fuori campo il missile nel caso non sia visibile
+        if (!isMissileVisible) {
+            DSmissile.map(currentImage, &uboMissile, 0);
+            DSmissile.map(currentImage, &gubo, 2);
+        }
+
+        UniformBufferObject ubo{};
+        if (boatVisible) {
+            // Update uniforms for the battleship
+            if (B0P0Alive) {
+                ubo.mMat = matrix[B0P0_x][B0P0_y];
+            }
+            else {
+                ubo.mMat = glm::translate(matrix[B0P0_x][B0P0_y], glm::vec3(0.0f, -100.0f, 0.0f));
+            }
+
+            ubo.mvpMat = ViewPrj * ubo.mMat;
+            ubo.nMat = glm::inverse(glm::transpose(ubo.mMat));
+            ubo.color = glm::vec4(1.0f);
+
+            DSb0p0.map(currentImage, &ubo, 0);
+            DSb0p0.map(currentImage, &gubo, 2);
+
+            // Update uniforms for the battleship
+            if (B1P0Alive) {
+                ubo.mMat = matrix[B1P0_x][B1P0_y];
+            }
+            else {
+                ubo.mMat = glm::translate(matrix[B1P0_x][B1P0_y], glm::vec3(0.0f, -100.0f, 0.0f));
+            }
+
+            ubo.mvpMat = ViewPrj * ubo.mMat;
+            ubo.nMat = glm::inverse(glm::transpose(ubo.mMat));
+            ubo.color = glm::vec4(1.0f);
+
+            DSb1p0.map(currentImage, &ubo, 0);
+            DSb1p0.map(currentImage, &gubo, 2);
+
+            // TODO: mancano le battelship del giocatore 1 e vanno aggiunte mappandole sulla seconda tavola
+            if (B0P1Alive) {
+                ubo.mMat = matrixB[B0P1_x][B0P1_y];
+            }
+            else {
+                ubo.mMat = glm::translate(matrixB[B0P1_x][B0P1_y], glm::vec3(0.0f, -100.0f, 0.0f));
+            }
+
+            ubo.mvpMat = ViewPrj * ubo.mMat;
+            ubo.nMat = glm::inverse(glm::transpose(ubo.mMat));
+            ubo.color = glm::vec4(1.0f);
+
+            DSb0p1.map(currentImage, &ubo, 0);
+            DSb0p1.map(currentImage, &gubo, 2);
+
+            if (B1P1Alive) {
+                ubo.mMat = matrixB[B1P1_x][B1P1_y];
+            }
+            else {
+                ubo.mMat = glm::translate(matrixB[B1P1_x][B1P1_y], glm::vec3(0.0f, -100.0f, 0.0f));
+            }
             ubo.mvpMat = ViewPrj * ubo.mMat;
             ubo.nMat = glm::inverse(glm::transpose(ubo.mMat));
             ubo.color = glm::vec4(1.0f);
@@ -1213,7 +1242,6 @@ protected:
             DSb1p1.map(currentImage, &ubo, 0);
             DSb1p1.map(currentImage, &gubo, 2);
 
-            
         }
 
     }
