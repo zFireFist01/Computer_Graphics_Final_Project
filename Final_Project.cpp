@@ -106,11 +106,10 @@ protected:
     DescriptorSet DSPlane;
 
     Model MverticalPlaneA;  // Modello per il piano verticale
-    Texture TverticalPlaneA;  // Texture per il piano verticale
+    Texture TverticalPlane;  // Texture per il piano verticale
     DescriptorSet DSVerticalPlaneA;  // Descriptor set per il piano verticale
 
     Model MverticalPlaneB;  // Modello per il piano verticale
-    Texture TverticalPlaneB;  // Texture per il piano verticale
     DescriptorSet DSVerticalPlaneB;  // Descriptor set per il piano verticale
 
     Model Mb0p0;
@@ -122,6 +121,7 @@ protected:
 
     Model Mb0p1;
     DescriptorSet DSb0p1;
+
     Model Mb1p1;
     DescriptorSet DSb1p1;
 
@@ -278,15 +278,14 @@ protected:
         TlargePlane.init(this, "textures/water_cropped_grid.jpg");
         Tbattleship.init(this, "textures/Metal.jpg");
         Tmissile.init(this, "textures/missile_texture.jpg");
-        TverticalPlaneA.init(this, "textures/texvertplaneA.jpg");  // Inizializza la texture del piano verticale (sostituisci con il percorso corretto)
-        TverticalPlaneB.init(this, "textures/texvertplaneB.jpg");
+        TverticalPlane.init(this, "textures/texvertplaneA.jpg");  // Inizializza la texture del piano verticale (sostituisci con il percorso corretto)
 
         // Descriptor pool sizes
         // WARNING!!!!!!!!
         // Must be set before initializing the text and the scene
-        DPSZs.uniformBlocksInPool = 14; // prima era 10
-        DPSZs.texturesInPool = 14; // prima era 10
-        DPSZs.setsInPool = 14; // da vedere se vanno aumentati
+        DPSZs.uniformBlocksInPool = 20; // prima era 10
+        DPSZs.texturesInPool = 20; // prima era 10
+        DPSZs.setsInPool = 20; // da vedere se vanno aumentati
 
         std::cout << "Initializing text\n";
         txt.init(this, &outText);
@@ -314,8 +313,8 @@ protected:
         DSb0p1.init(this, &DSLBattleship, { &Tbattleship });
         DSb1p1.init(this, &DSLBattleship, { &Tbattleship });
         DSmissile.init(this, &DSLBattleship, { &Tmissile });
-        DSVerticalPlaneA.init(this, &DSLPlane, { &TverticalPlaneA });  // Inizializza il descriptor set per il piano verticale con la sua texture
-        DSVerticalPlaneB.init(this, &DSLPlane, { &TverticalPlaneB });
+        DSVerticalPlaneA.init(this, &DSLPlane, { &TverticalPlane });  // Inizializza il descriptor set per il piano verticale con la sua texture
+        DSVerticalPlaneB.init(this, &DSLPlane, { &TverticalPlane });
 
         DSGlobal.init(this, &DSLGlobal, {});
 
@@ -361,9 +360,8 @@ protected:
         Mb0p1.cleanup();
         Mb1p1.cleanup();
 
-        TverticalPlaneA.cleanup();
+        TverticalPlane.cleanup();
         MverticalPlaneA.cleanup();
-        TverticalPlaneB.cleanup();
         MverticalPlaneB.cleanup();
 
         Tmissile.cleanup();
@@ -670,7 +668,7 @@ protected:
         uboVerticalPlaneA.nMat = glm::inverse(glm::transpose(uboVerticalPlaneA.mMat));
         uboVerticalPlaneA.color = glm::vec4(1.0f);  // Colore del piano verticale
 
-        uboVerticalPlaneB.mMat = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -1.0f)) * glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+        uboVerticalPlaneB.mMat = glm::translate(glm::rotate(glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -1.0f)) * glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f)),glm::radians(180.0f), glm::vec3(0.0f,1.0f,0.0f)), glm::vec3(-194.0f, 0.0f, 0.0f));
         uboVerticalPlaneB.mvpMat = ViewPrj * uboVerticalPlaneB.mMat;
         uboVerticalPlaneB.nMat = glm::inverse(glm::transpose(uboVerticalPlaneB.mMat));
         uboVerticalPlaneB.color = glm::vec4(1.0f);  // Colore del piano verticale
