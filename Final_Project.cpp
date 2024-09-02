@@ -49,6 +49,9 @@ struct skyBoxUniformBufferObject {
     alignas(16) glm::mat4 mvpMat;
 };
 
+struct EmissionUniformBufferObject {
+    alignas(16) glm::mat4 mvpMat;
+};
 // The vertices data structures
 struct skyBoxVertex {
     glm::vec3 pos;
@@ -60,9 +63,9 @@ struct Vertex {
     glm::vec3 norm;
 };
 
-struct Light {
-    glm::vec3 position;
-    glm::vec3 color;
+struct EmissionVertex {
+    glm::vec3 pos;
+    glm::vec2 UV;
 };
 
 // MAIN ! 
@@ -75,16 +78,19 @@ protected:
     DescriptorSetLayout DSLskyBox;  // For skyBox
     DescriptorSetLayout DSLPlane;   // For the plane
     DescriptorSetLayout DSLBattleship;  // For the battleship
+    DescriptorSetLayout DSLEmission;  
 
     // Vertex formats
     VertexDescriptor VDskyBox;
     VertexDescriptor VDPlane;
     VertexDescriptor VDBattleship;
+    VertexDescriptor VDEmission;
 
     // Pipelines [Shader couples]
     Pipeline PskyBox;
     Pipeline PPlane;
     Pipeline PBattleship;
+    Pipeline PEmission;
 
     // Scenes and texts
     TextMaker txt;
@@ -123,6 +129,10 @@ protected:
     Model Mmissile;
     Texture Tmissile;
     DescriptorSet DSmissile;
+
+    Model Mmoon;
+    Texture Tmoon;
+    DescriptorSet DSmoon;
     
     Model MExplosionSphere;
     Texture TExplosionSphere;
@@ -218,6 +228,10 @@ protected:
                     {1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 0, 1},
                     {2, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS, 1, 1}
             });
+        DSLEmission.init(this, {
+                    {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, sizeof(EmissionUniformBufferObject), 1},
+                    {1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 0, 1},
+            });
 
 
         // Vertex descriptors
@@ -247,6 +261,14 @@ protected:
                 {0, 2, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, norm),
                     sizeof(glm::vec3), NORMAL}
             });
+        VDEmission.init(this, {
+                    {0, sizeof(EmissionVertex), VK_VERTEX_INPUT_RATE_VERTEX}
+            }, {
+                {0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(EmissionVertex, pos),
+                    sizeof(glm::vec3), POSITION},
+                {0, 1, VK_FORMAT_R32G32_SFLOAT, offsetof(EmissionVertex, UV),
+                    sizeof(glm::vec2), UV}
+            });
 
         // Pipelines [Shader couples]
         PskyBox.init(this, &VDskyBox, "shaders/SkyBoxVert.spv", "shaders/SkyBoxFrag.spv", { &DSLskyBox });
@@ -261,6 +283,9 @@ protected:
         PBattleship.setAdvancedFeatures(VK_COMPARE_OP_LESS_OR_EQUAL, VK_POLYGON_MODE_FILL,
             VK_CULL_MODE_BACK_BIT, false);
 
+        PEmission.init(this, &VDEmission, "shaders/EmissionVert.spv", "shaders/EmissionFrag.spv", { &DSLEmission });
+
+
         // Create models
         MskyBox.init(this, &VDskyBox, "models/SkyBoxCube.obj", OBJ);
         MlargePlane.init(this, &VDPlane, "models/Water.obj", OBJ);
@@ -272,6 +297,7 @@ protected:
         MverticalPlaneA.init(this, &VDPlane, "models/LargePlane3.obj", OBJ);  // Inizializza il modello del piano verticale
         MverticalPlaneB.init(this, &VDPlane, "models/LargePlane3.obj", OBJ);  // Inizializza il modello del piano verticale
         MExplosionSphere.init(this, &VDBattleship, "models/Sphere.obj", OBJ);
+        Mmoon.init(this, &VDBattleship, "models/Sphere.obj", OBJ);
 
         // Create the textures
         TskyBox.init(this, "textures/starmap_g4k.jpg");
@@ -280,6 +306,7 @@ protected:
         Tmissile.init(this, "textures/missile_texture.jpg");
         TverticalPlane.init(this, "textures/texvertplaneA.jpg");  // Inizializza la texture del piano verticale (sostituisci con il percorso corretto)
         TExplosionSphere.init(this, "textures/explosion_texture.jpg");
+        Tmoon.init(this, "textures/explosion_texture.jpg");
 
         // Descriptor pool sizes
         // WARNING!!!!!!!!
@@ -305,6 +332,7 @@ protected:
         PskyBox.create();
         PPlane.create();
         PBattleship.create();
+        PEmission.create();
 
         // Here you define the data set
         DSskyBox.init(this, &DSLskyBox, { &TskyBox });
@@ -317,6 +345,7 @@ protected:
         DSVerticalPlaneA.init(this, &DSLPlane, { &TverticalPlane });  // Inizializza il descriptor set per il piano verticale con la sua texture
         DSVerticalPlaneB.init(this, &DSLPlane, { &TverticalPlane });
         DSExplosionSphere.init(this, &DSLBattleship, { &TExplosionSphere });
+        DSmoon.init(this, &DSLEmission, { &Tmoon });
 
         DSGlobal.init(this, &DSLGlobal, {});
 
@@ -330,6 +359,7 @@ protected:
         PskyBox.cleanup();
         PPlane.cleanup();
         PBattleship.cleanup();
+        PEmission.cleanup();
 
         DSskyBox.cleanup();
         DSPlane.cleanup();
@@ -342,6 +372,7 @@ protected:
         DSVerticalPlaneA.cleanup();
         DSVerticalPlaneB.cleanup();
         DSExplosionSphere.cleanup();
+        DSmoon.cleanup();
 
         txt.pipelinesAndDescriptorSetsCleanup();
     }
@@ -373,17 +404,22 @@ protected:
         MExplosionSphere.cleanup();
         TExplosionSphere.cleanup();
 
+        Mmoon.cleanup();
+        Tmoon.cleanup();
+
         // Cleanup descriptor set layouts
         DSLGlobal.cleanup();
         DSLskyBox.cleanup();
         DSLPlane.cleanup();
         DSLBattleship.cleanup();
+        DSLEmission.cleanup();
         //DSmissile.cleanup();
 
         // Destroies the pipelines
         PskyBox.destroy();
         PPlane.destroy();
         PBattleship.destroy();
+        PEmission.destroy();
 
         txt.localCleanup();
     }
@@ -451,6 +487,11 @@ protected:
         MExplosionSphere.bind(commandBuffer);
         DSExplosionSphere.bind(commandBuffer, PBattleship, 0, currentImage);
         vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(MExplosionSphere.indices.size()), 1, 0, 0, 0);
+
+        PEmission.bind(commandBuffer);
+        Mmoon.bind(commandBuffer);
+        DSmoon.bind(commandBuffer, PEmission, 0, currentImage);
+        vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(Mmoon.indices.size()), 1, 0, 0, 0);
 
         txt.populateCommandBuffer(commandBuffer, currentImage, currScene);
     }
@@ -661,6 +702,11 @@ protected:
         skyBoxUniformBufferObject sbubo{};
         sbubo.mvpMat = M * glm::mat4(glm::mat3(Mv));
         DSskyBox.map(currentImage, &sbubo, 0);
+
+
+        EmissionUniformBufferObject eubo{};
+        eubo.mvpMat = ViewPrj * glm::translate(glm::mat4(1.0f), gubo.lightDir * 40.0f) * glm::mat4(1.0f);
+        DSmoon.map(currentImage, &eubo, 0);
 
         //For the vertical plane
         UniformBufferObject uboVerticalPlaneA{};
