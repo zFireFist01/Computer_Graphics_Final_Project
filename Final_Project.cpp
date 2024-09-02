@@ -63,10 +63,13 @@ struct Vertex {
     glm::vec3 norm;
 };
 
+<<<<<<< HEAD
 struct EmissionVertex {
     glm::vec3 pos;
     glm::vec2 UV;
 };
+=======
+>>>>>>> refs/remotes/origin/main
 
 // MAIN ! 
 class FinalProject : public BaseProject {
@@ -279,7 +282,7 @@ protected:
         PPlane.setAdvancedFeatures(VK_COMPARE_OP_LESS_OR_EQUAL, VK_POLYGON_MODE_FILL,
             VK_CULL_MODE_BACK_BIT, false);
 
-        PBattleship.init(this, &VDBattleship, "shaders/PhongVert.spv", "shaders/PhongFrag.spv", { &DSLBattleship });
+        PBattleship.init(this, &VDBattleship, "shaders/BattleshipVert.spv", "shaders/BattleshipFrag.spv", { &DSLBattleship });
         PBattleship.setAdvancedFeatures(VK_COMPARE_OP_LESS_OR_EQUAL, VK_POLYGON_MODE_FILL,
             VK_CULL_MODE_BACK_BIT, false);
 
@@ -582,48 +585,6 @@ protected:
         if (glfwGetKey(window, GLFW_KEY_ESCAPE)) {
             glfwSetWindowShouldClose(window, GL_TRUE);
         }
-
-        /*Lo lascio potrebbe servire dopo per le macchine di gioco
-        if (glfwGetKey(window, GLFW_KEY_V)) {
-            if (!debounce) {
-                debounce = true;
-                curDebounce = GLFW_KEY_V;
-
-                printMat4("ViewMatrix  ", ViewMatrix);
-            }
-        }
-        else {
-            if ((curDebounce == GLFW_KEY_V) && debounce) {
-                debounce = false;
-                curDebounce = 0;
-            }
-        }
-
-        if (glfwGetKey(window, GLFW_KEY_C)) {
-            if (!debounce) {
-                debounce = true;
-                curDebounce = GLFW_KEY_C;
-            }
-        }
-        else {
-            if ((curDebounce == GLFW_KEY_C) && debounce) {
-                debounce = false;
-                curDebounce = 0;
-            }
-        }
-
-        if (glfwGetKey(window, GLFW_KEY_T)) {
-            if (!debounce) {
-                debounce = true;
-                curDebounce = GLFW_KEY_T;
-            }
-        }
-        else {
-            if ((curDebounce == GLFW_KEY_T) && debounce) {
-                debounce = false;
-                curDebounce = 0;
-            }
-        }*/
 
 
         if (currScene == 1) {
