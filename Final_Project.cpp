@@ -7,8 +7,20 @@
 #define NPLANE 2
 
 std::vector<SingleText> outText = {
-    {2, {"PlayGround Scene", "Press SPACE to save the screenshots","",""}, 0, 0},
-    {1, {"Saving Screenshots. Please wait.", "", "",""}, 0, 0}
+    {2, {"Player 0.", "Select X_position of boat 0 [0-8]","",""}, 0, 0},
+    {2, {"Player 0.", "Select Y_position of boat 0 [0-8]","",""}, 0, 0},
+    {2, {"Player 0.", "Select X_position of boat 1 [0-8]","",""}, 0, 0},
+    {2, {"Player 0.", "Select Y_position of boat 1 [0-8]","",""}, 0, 0},
+    {2, {"Player 1.", "Select X_position of boat 0 [0-8]","",""}, 0, 0},
+    {2, {"Player 1.", "Select Y_position of boat 0 [0-8]","",""}, 0, 0},
+    {2, {"Player 1.", "Select X_position of boat 1 [0-8]","",""}, 0, 0},
+    {2, {"Player 1.", "Select Y_position of boat 1 [0-8]","",""}, 0, 0},
+    {1, {"Player 1 select X attack [0-8]", "", "",""}, 0, 0},
+    {1, {"Player 1 select Y attack [0-8]", "", "",""}, 0, 0},
+    {1, {"Player 2 select X attack [0-8]", "", "",""}, 0, 0},
+    {1, {"Player 2 select Y attack [0-8]", "", "",""}, 0, 0}, 
+    {1, {"Player 2 select X attack [0-8]", "", "",""}, 0, 0},
+    {1, {"", "", "", ""}, 0, 0}
 };
 
 // The uniform buffer object used in this example
@@ -20,7 +32,6 @@ struct GlobalUniformBufferObject {
 };
 
 enum GameState {
-    TEST_LIGH,
     WAITING_BOAT_X,
     WAITING_BOAT_Y,
     PROCESSING_BOAT_INPUT,
@@ -291,7 +302,7 @@ protected:
         PPlane.setAdvancedFeatures(VK_COMPARE_OP_LESS_OR_EQUAL, VK_POLYGON_MODE_FILL,
             VK_CULL_MODE_BACK_BIT, false);
 
-        PBattleship.init(this, &VDBattleship, "shaders/BattleshipVert.spv", "shaders/BattleshipFrag.spv", { &DSLBattleship });
+        PBattleship.init(this, &VDBattleship, "shaders/PhongVert.spv", "shaders/PhongFrag.spv", { &DSLBattleship });
         PBattleship.setAdvancedFeatures(VK_COMPARE_OP_LESS_OR_EQUAL, VK_POLYGON_MODE_FILL,
             VK_CULL_MODE_BACK_BIT, false);
 
@@ -323,9 +334,9 @@ protected:
         // Descriptor pool sizes
         // WARNING!!!!!!!!
         // Must be set before initializing the text and the scene
-        DPSZs.uniformBlocksInPool = 30;
-        DPSZs.texturesInPool = 30;
-        DPSZs.setsInPool = 30;
+        DPSZs.uniformBlocksInPool = 21;
+        DPSZs.texturesInPool = 21;
+        DPSZs.setsInPool = 21;
 
         std::cout << "Initializing text\n";
         txt.init(this, &outText);
@@ -567,7 +578,7 @@ protected:
 
         static float subpassTimer = 0.0;
 
-        if (glfwGetKey(window, GLFW_KEY_SPACE)) {
+        /*if (glfwGetKey(window, GLFW_KEY_SPACE)) {
             if (!debounce) {
                 debounce = true;
                 curDebounce = GLFW_KEY_SPACE;
@@ -590,15 +601,14 @@ protected:
                 debounce = false;
                 curDebounce = 0;
             }
-        }
+        }*/
 
         // Standard procedure to quit when the ESC key is pressed
         if (glfwGetKey(window, GLFW_KEY_ESCAPE)) {
             glfwSetWindowShouldClose(window, GL_TRUE);
         }
 
-
-        if (currScene == 1) {
+        /*if (currScene == 1) {
             switch (subpass) {
             case 0:
                 ViewMatrix = glm::mat4(-0.0656882, -0.162777, 0.984474, 0, 0.0535786, 0.984606, 0.166374, 0, -0.996401, 0.0636756, -0.0559558, 0, 0.0649244, -0.531504, -3.26128, 1);
@@ -634,6 +644,7 @@ protected:
                 }
             }
         }
+        */
 
         // Here is where you actually update your uniforms
         glm::mat4 M = glm::perspective(glm::radians(45.0f), Ar, 0.1f, 1000.0f); // Projection matrix; If you want to see further icrease the last parameter
@@ -706,6 +717,8 @@ protected:
             case WAITING_BOAT_X: {
                 if (currPlayer == 0) {
                     if (B0P0_x == -1) {
+                        currScene = 0;
+                        RebuildPipeline();
                         if (!debounce) {
                             if (glfwGetKey(window, GLFW_KEY_0) == GLFW_PRESS) { B0P0_x = 0; debounce = true; }
                             if (glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS) { B0P0_x = 1; debounce = true; }
@@ -735,6 +748,8 @@ protected:
                         }
                     }
                     else {
+                        currScene = 2;
+                        RebuildPipeline();
                         if (!debounce) {
                             if (glfwGetKey(window, GLFW_KEY_0) == GLFW_PRESS) { B1P0_x = 0; debounce = true; }
                             if (glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS) { B1P0_x = 1; debounce = true; }
@@ -766,6 +781,8 @@ protected:
                 }
                 else {
                     if (B0P1_x == -1) {
+                        currScene = 4;
+                        RebuildPipeline();
                         if (!debounce) {
                             if (glfwGetKey(window, GLFW_KEY_0) == GLFW_PRESS) { B0P1_x = 0; debounce = true; }
                             if (glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS) { B0P1_x = 1; debounce = true; }
@@ -795,6 +812,8 @@ protected:
                         }
                     }
                     else {
+                        currScene = 6;
+                        RebuildPipeline();
                         if (!debounce) {
                             if (glfwGetKey(window, GLFW_KEY_0) == GLFW_PRESS) { B1P1_x = 0; debounce = true; }
                             if (glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS) { B1P1_x = 1; debounce = true; }
@@ -830,6 +849,8 @@ protected:
             case WAITING_BOAT_Y: {
                 if (currPlayer == 0) {
                     if (B0P0_y == -1) {
+                        currScene = 1;
+                        RebuildPipeline();
                         if (!debounce) {
                             if (glfwGetKey(window, GLFW_KEY_0) == GLFW_PRESS) { B0P0_y = 0; debounce = true; }
                             if (glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS) { B0P0_y = 1; debounce = true; }
@@ -859,6 +880,8 @@ protected:
                         }
                     }
                     else {
+                        currScene = 3;
+                        RebuildPipeline();
                         if (!debounce) {
                             if (glfwGetKey(window, GLFW_KEY_0) == GLFW_PRESS) { B1P0_y = 0; debounce = true; }
                             if (glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS) { B1P0_y = 1; debounce = true; }
@@ -891,6 +914,8 @@ protected:
                 }
                 else {
                     if (B0P1_y == -1) {
+                        currScene = 5;
+                        RebuildPipeline();
                         if (!debounce) {
                             if (glfwGetKey(window, GLFW_KEY_0) == GLFW_PRESS) { B0P1_y = 0; debounce = true; }
                             if (glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS) { B0P1_y = 1; debounce = true; }
@@ -920,6 +945,8 @@ protected:
                         }
                     }
                     else {
+                        currScene = 7;
+                        RebuildPipeline();
                         if (!debounce) {
                             if (glfwGetKey(window, GLFW_KEY_0) == GLFW_PRESS) { B1P1_y = 0; debounce = true; }
                             if (glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS) { B1P1_y = 1; debounce = true; }
@@ -954,6 +981,8 @@ protected:
             }
 
             case PROCESSING_BOAT_INPUT: {
+                currScene = 12;
+                RebuildPipeline();
                 UniformBufferObject ubo{};
                 // Update uniforms for the battleship
                 ubo.mMat = matrix[B0P0_x][B0P0_y];
@@ -997,6 +1026,14 @@ protected:
             }
 
             case WAITING_ATTACK_X: {
+                if (currPlayer == 0) {
+                    currScene = 8;
+                }
+                else {
+                    currScene = 10;
+                }
+                RebuildPipeline();
+                
                 if (!debounce) {
                     if (glfwGetKey(window, GLFW_KEY_0) == GLFW_PRESS) { targetX = 0; debounce = true; }
                     if (glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS) { targetX = 1; debounce = true; }
@@ -1030,6 +1067,14 @@ protected:
             }
 
             case WAITING_ATTACK_Y: {
+                if (currPlayer == 0) {
+                    currScene = 9;
+                }
+                else {
+                    currScene = 11;
+                }
+                RebuildPipeline();
+
                 if (!debounce) {
                     if (glfwGetKey(window, GLFW_KEY_0) == GLFW_PRESS) { targetY = 0; debounce = true; }
                     if (glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS) { targetY = 1; debounce = true; }
@@ -1062,6 +1107,9 @@ protected:
             }
 
             case PROCESSING_ATTACK_INPUT: {
+                currScene = 12;
+                RebuildPipeline();
+
                 if (targetX != -1 && targetY != -1) {
                     missileTime = 0.0f;  // Reset the missile animation time
                     if (currPlayer == 0) {
