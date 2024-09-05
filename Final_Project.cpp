@@ -95,6 +95,7 @@ protected:
     Pipeline PPlane;
     Pipeline PVerticalPlane;
     Pipeline PBattleship;
+    Pipeline PExplosionSphere;
 
     // Scenes and texts
     TextMaker txt;
@@ -286,6 +287,10 @@ protected:
         PBattleship.setAdvancedFeatures(VK_COMPARE_OP_LESS_OR_EQUAL, VK_POLYGON_MODE_FILL,
             VK_CULL_MODE_BACK_BIT, false);
 
+        PExplosionSphere.init(this, &VDBattleship, "shaders/BattleshipVert.spv", "shaders/BattleshipFrag.spv", { &DSLBattleship });
+        PExplosionSphere.setAdvancedFeatures(VK_COMPARE_OP_LESS_OR_EQUAL, VK_POLYGON_MODE_FILL,
+            VK_CULL_MODE_BACK_BIT, false);
+
         // Create models
         MskyBox.init(this, &VDskyBox, "models/SkyBoxCube.obj", OBJ);
         MlargePlane.init(this, &VDPlane, "models/Water.obj", OBJ);
@@ -330,6 +335,7 @@ protected:
         PPlane.create();
         PVerticalPlane.create();
         PBattleship.create();
+        PExplosionSphere.create();
 
         // Here you define the data set
         DSskyBox.init(this, &DSLskyBox, { &TskyBox });
@@ -355,6 +361,7 @@ protected:
         PPlane.cleanup();
         PVerticalPlane.cleanup();
         PBattleship.cleanup();
+        PExplosionSphere.cleanup();
 
         DSskyBox.cleanup();
         DSPlane.cleanup();
@@ -409,6 +416,7 @@ protected:
         PPlane.destroy();
         PVerticalPlane.destroy();
         PBattleship.destroy();
+        PExplosionSphere.destroy();
 
         txt.localCleanup();
     }
@@ -473,6 +481,10 @@ protected:
         DSVerticalPlane.bind(commandBuffer, PVerticalPlane, 1, currentImage);
         vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(MverticalPlane.indices.size()), NPLANE, 0, 0, 0);
         
+        PExplosionSphere.bind(commandBuffer);
+        MExplosionSphere.bind(commandBuffer);
+        DSExplosionSphere.bind(commandBuffer, PExplosionSphere, 0, currentImage);
+        vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(MExplosionSphere.indices.size()), 1, 0, 0, 0);
 
         txt.populateCommandBuffer(commandBuffer, currentImage, currScene);
     }
@@ -1127,7 +1139,6 @@ protected:
                     uboMissile.color = glm::vec4(1.0f);
 
                     DSmissile.map(currentImage, &uboMissile, 0);
-                    DSmissile.map(currentImage, &gubo, 2);
                 }
                 break;
             }
@@ -1166,19 +1177,16 @@ protected:
                 uboExplosion.color = glm::vec4(1.0f, 0.5f, 0.0f, 1.0f); // Colore arancione
 
                 DSExplosionSphere.map(currentImage, &uboExplosion, 0);
-                DSExplosionSphere.map(currentImage, &gubo, 2);                
             }
         }
 
         // renderizza fuori campo il missile nel caso non sia visibile
         if (!isMissileVisible) {
             DSmissile.map(currentImage, &uboMissile, 0);
-            DSmissile.map(currentImage, &gubo, 2);
         }
 
         if (!isExplosionVisible) {
             DSExplosionSphere.map(currentImage, &uboExplosion, 0);
-            DSExplosionSphere.map(currentImage, &gubo, 2);
         }
 
         UniformBufferObject ubo{};
@@ -1196,7 +1204,6 @@ protected:
             ubo.color = glm::vec4(1.0f);
 
             DSb0p0.map(currentImage, &ubo, 0);
-            DSb0p0.map(currentImage, &gubo, 2);
 
             // Update uniforms for the battleship
             if (B1P0Alive || currentState == ANIMATING_EXPLOSION) {
@@ -1211,7 +1218,6 @@ protected:
             ubo.color = glm::vec4(1.0f);
 
             DSb1p0.map(currentImage, &ubo, 0);
-            DSb1p0.map(currentImage, &gubo, 2);
 
             // TODO: mancano le battelship del giocatore 1 e vanno aggiunte mappandole sulla seconda tavola
             if (B0P1Alive || currentState == ANIMATING_EXPLOSION) {
@@ -1226,7 +1232,6 @@ protected:
             ubo.color = glm::vec4(1.0f);
 
             DSb0p1.map(currentImage, &ubo, 0);
-            DSb0p1.map(currentImage, &gubo, 2);
 
             if (B1P1Alive || currentState == ANIMATING_EXPLOSION) {
                 ubo.mMat = matrixB[B1P1_x][B1P1_y];
@@ -1239,7 +1244,6 @@ protected:
             ubo.color = glm::vec4(1.0f);
 
             DSb1p1.map(currentImage, &ubo, 0);
-            DSb1p1.map(currentImage, &gubo, 2);
         }
         else { // posizioni iniziali causali - TODO: inserire pure quelle del giocatore 2
             ubo.mMat = matrix[1][3];
@@ -1248,7 +1252,6 @@ protected:
             ubo.color = glm::vec4(1.0f);
 
             DSb0p0.map(currentImage, &ubo, 0);
-            DSb0p0.map(currentImage, &gubo, 2);
 
             // Update uniforms for the battleship
             ubo.mMat = matrix[8][6];
@@ -1257,7 +1260,6 @@ protected:
             ubo.color = glm::vec4(1.0f);
 
             DSb1p0.map(currentImage, &ubo, 0);
-            DSb1p0.map(currentImage, &gubo, 2);
 
             // TODO: mancano le battelship del giocatore 1 e vanno aggiunte mappandole sulla seconda tavola
             ubo.mMat = matrixB[0][2];
@@ -1266,7 +1268,6 @@ protected:
             ubo.color = glm::vec4(1.0f);
 
             DSb0p1.map(currentImage, &ubo, 0);
-            DSb0p1.map(currentImage, &gubo, 2);
 
             ubo.mMat = matrixB[7][5];
             ubo.mvpMat = ViewPrj * ubo.mMat;
@@ -1274,8 +1275,6 @@ protected:
             ubo.color = glm::vec4(1.0f);
 
             DSb1p1.map(currentImage, &ubo, 0);
-            DSb1p1.map(currentImage, &gubo, 2);
-
         }
 
     }
