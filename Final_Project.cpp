@@ -25,10 +25,10 @@ std::vector<SingleText> outText = {
 
 // The uniform buffer object used in this example
 struct GlobalUniformBufferObject {
-    alignas(16) glm::vec3 lightDir;
-    alignas(16) glm::vec4 lightColor;
+    alignas(16) glm::vec3 lightDir[3];
+    alignas(16) glm::vec3 lightPos[3];
+    alignas(16) glm::vec4 lightColor[3];
     alignas(16) glm::vec3 eyePos;
-    alignas(16) glm::vec4 eyeDir;
 };
 
 enum GameState {
@@ -53,17 +53,11 @@ struct PlaneUniformBufferObject {
     alignas(16) glm::mat4 mvpMat[NPLANE];
     alignas(16) glm::mat4 mMat[NPLANE];
     alignas(16) glm::mat4 nMat[NPLANE];
-    alignas(16) glm::vec4 color[NPLANE];
 };
 
 struct skyBoxUniformBufferObject {
     alignas(16) glm::mat4 mvpMat;
 };
-
-/*
-struct EmissionUniformBufferObject {
-    alignas(16) glm::mat4 mvpMat;
-};*/
 
 
 // The vertices data structures
@@ -77,12 +71,6 @@ struct Vertex {
     glm::vec3 norm;
 };
 
-/*
-struct EmissionVertex {
-    glm::vec3 pos;
-    glm::vec2 UV;
-};
-*/
 
 // MAIN ! 
 class FinalProject : public BaseProject {
@@ -93,20 +81,20 @@ protected:
 
     DescriptorSetLayout DSLskyBox;  // For skyBox
     DescriptorSetLayout DSLPlane;   // For the plane
+    DescriptorSetLayout DSLVerticalPlane;  // For the vertical plane
     DescriptorSetLayout DSLBattleship;  // For the battleship
-    //DescriptorSetLayout DSLEmission;  
 
     // Vertex formats
     VertexDescriptor VDskyBox;
     VertexDescriptor VDPlane;
+    VertexDescriptor VDVerticalPlane;
     VertexDescriptor VDBattleship;
-    //VertexDescriptor VDEmission;
 
     // Pipelines [Shader couples]
     Pipeline PskyBox;
     Pipeline PPlane;
+    Pipeline PVerticalPlane;
     Pipeline PBattleship;
-    //Pipeline PEmission;
 
     // Scenes and texts
     TextMaker txt;
@@ -122,12 +110,9 @@ protected:
     Texture TlargePlane;
     DescriptorSet DSPlane;
 
-    Model MverticalPlaneA;  // Modello per il piano verticale
+    Model MverticalPlane;  // Modello per il piano verticale
     Texture TverticalPlane;  // Texture per il piano verticale
-    DescriptorSet DSVerticalPlaneA;  // Descriptor set per il piano verticale
-
-    Model MverticalPlaneB;  // Modello per il piano verticale
-    DescriptorSet DSVerticalPlaneB;  // Descriptor set per il piano verticale
+    DescriptorSet DSVerticalPlane;
 
     Model Mb0p0;
     Texture Tbattleship;
@@ -146,13 +131,6 @@ protected:
     Texture Tmissile;
     DescriptorSet DSmissile;
 
-    /*
-    Model Mmoon;
-    Texture Tmoon;
-    DescriptorSet DSmoon;
-    */
-    
-    
     Model MExplosionSphere;
     Texture TExplosionSphere;
     DescriptorSet DSExplosionSphere;
@@ -242,17 +220,16 @@ protected:
                     {1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 0, 1},
                     {2, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS, 1, 1}
             });
+        DSLVerticalPlane.init(this, {
+                    {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, sizeof(PlaneUniformBufferObject), 1},
+                    {1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 0, 1},
+                    {2, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS, 1, 1}
+            });
         DSLBattleship.init(this, {
                     {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, sizeof(UniformBufferObject), 1},
                     {1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 0, 1},
                     {2, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS, 1, 1}
             });
-        /*  
-        DSLEmission.init(this, {
-                    {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, sizeof(EmissionUniformBufferObject), 1},
-                    {1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 0, 1},
-            });
-        */
 
         // Vertex descriptors
         VDskyBox.init(this, {
@@ -266,10 +243,20 @@ protected:
             }, {
                 {0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, pos),
                     sizeof(glm::vec3), POSITION},
-                {0, 1, VK_FORMAT_R32G32_SFLOAT, offsetof(Vertex, UV),
-                    sizeof(glm::vec2), UV},
-                {0, 2, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, norm),
-                    sizeof(glm::vec3), NORMAL}
+                {0, 1, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, norm),
+                    sizeof(glm::vec3), NORMAL},
+                {0, 2, VK_FORMAT_R32G32_SFLOAT, offsetof(Vertex, UV),
+                    sizeof(glm::vec2), UV}
+            });
+        VDVerticalPlane.init(this, {
+                    {0, sizeof(Vertex), VK_VERTEX_INPUT_RATE_VERTEX}
+            }, {
+                {0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, pos),
+                    sizeof(glm::vec3), POSITION},
+                {0, 1, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, norm),
+                    sizeof(glm::vec3), NORMAL},
+                {0, 2, VK_FORMAT_R32G32_SFLOAT, offsetof(Vertex, UV),
+                    sizeof(glm::vec2), UV}
             });
         VDBattleship.init(this, {
                     {0, sizeof(Vertex), VK_VERTEX_INPUT_RATE_VERTEX}
@@ -281,33 +268,23 @@ protected:
                 {0, 2, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, norm),
                     sizeof(glm::vec3), NORMAL}
             });
-        
-        /*
-        VDEmission.init(this, {
-                    {0, sizeof(EmissionVertex), VK_VERTEX_INPUT_RATE_VERTEX}
-            }, {
-                {0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(EmissionVertex, pos),
-                    sizeof(glm::vec3), POSITION},
-                {0, 1, VK_FORMAT_R32G32_SFLOAT, offsetof(EmissionVertex, UV),
-                    sizeof(glm::vec2), UV}
-            });
-        */
 
         // Pipelines [Shader couples]
         PskyBox.init(this, &VDskyBox, "shaders/SkyBoxVert.spv", "shaders/SkyBoxFrag.spv", { &DSLskyBox });
         PskyBox.setAdvancedFeatures(VK_COMPARE_OP_LESS_OR_EQUAL, VK_POLYGON_MODE_FILL,
             VK_CULL_MODE_BACK_BIT, false);
 
-        PPlane.init(this, &VDPlane, "shaders/PlaneVert.spv", "shaders/PlaneFrag.spv", { &DSLPlane });
+        PPlane.init(this, &VDPlane, "shaders/PlaneVert.spv", "shaders/PlaneFrag.spv", { &DSLGlobal, &DSLPlane });
         PPlane.setAdvancedFeatures(VK_COMPARE_OP_LESS_OR_EQUAL, VK_POLYGON_MODE_FILL,
             VK_CULL_MODE_BACK_BIT, false);
 
-        PBattleship.init(this, &VDBattleship, "shaders/PhongVert.spv", "shaders/PhongFrag.spv", { &DSLBattleship });
-        PBattleship.setAdvancedFeatures(VK_COMPARE_OP_LESS_OR_EQUAL, VK_POLYGON_MODE_FILL,
+        PVerticalPlane.init(this, &VDVerticalPlane, "shaders/PlaneVert.spv", "shaders/PlaneFrag.spv", {&DSLGlobal, &DSLVerticalPlane });
+        PVerticalPlane.setAdvancedFeatures(VK_COMPARE_OP_LESS_OR_EQUAL, VK_POLYGON_MODE_FILL,
             VK_CULL_MODE_BACK_BIT, false);
 
-        //PEmission.init(this, &VDEmission, "shaders/EmissionVert.spv", "shaders/EmissionFrag.spv", { &DSLEmission });
-
+        PBattleship.init(this, &VDBattleship, "shaders/BattleshipVert.spv", "shaders/BattleshipFrag.spv", { &DSLBattleship });
+        PBattleship.setAdvancedFeatures(VK_COMPARE_OP_LESS_OR_EQUAL, VK_POLYGON_MODE_FILL,
+            VK_CULL_MODE_BACK_BIT, false);
 
         // Create models
         MskyBox.init(this, &VDskyBox, "models/SkyBoxCube.obj", OBJ);
@@ -317,10 +294,8 @@ protected:
         Mb0p1.init(this, &VDBattleship, "models/Warships/Battleship.obj", OBJ);
         Mb1p1.init(this, &VDBattleship, "models/Warships/Battleship.obj", OBJ);
         Mmissile.init(this, &VDBattleship, "models/Missile/missile3.obj", OBJ);
-        MverticalPlaneA.init(this, &VDPlane, "models/LargePlane3.obj", OBJ);  // Inizializza il modello del piano verticale
-        MverticalPlaneB.init(this, &VDPlane, "models/LargePlane3.obj", OBJ);  // Inizializza il modello del piano verticale
+        MverticalPlane.init(this, &VDVerticalPlane, "models/LargePlane3.obj", OBJ);  // Inizializza il modello del piano verticale
         MExplosionSphere.init(this, &VDBattleship, "models/Sphere.obj", OBJ);
-        //Mmoon.init(this, &VDBattleship, "models/Sphere.gltf", GLTF);
 
         // Create the textures
         TskyBox.init(this, "textures/starmap_g4k.jpg");
@@ -329,14 +304,13 @@ protected:
         Tmissile.init(this, "textures/missile_texture.jpg");
         TverticalPlane.init(this, "textures/texvertplaneA.jpg");  // Inizializza la texture del piano verticale (sostituisci con il percorso corretto)
         TExplosionSphere.init(this, "textures/explosion_texture.jpg");
-        //Tmoon.init(this, "textures/2k_moon.jpg");
 
         // Descriptor pool sizes
         // WARNING!!!!!!!!
         // Must be set before initializing the text and the scene
-        DPSZs.uniformBlocksInPool = 21;
-        DPSZs.texturesInPool = 21;
-        DPSZs.setsInPool = 21;
+        DPSZs.uniformBlocksInPool = 30;
+        DPSZs.texturesInPool = 30;
+        DPSZs.setsInPool = 30;
 
         std::cout << "Initializing text\n";
         txt.init(this, &outText);
@@ -354,8 +328,8 @@ protected:
         // This creates a new pipeline (with the current surface), using its shaders
         PskyBox.create();
         PPlane.create();
+        PVerticalPlane.create();
         PBattleship.create();
-        //PEmission.create();
 
         // Here you define the data set
         DSskyBox.init(this, &DSLskyBox, { &TskyBox });
@@ -365,10 +339,8 @@ protected:
         DSb0p1.init(this, &DSLBattleship, { &Tbattleship });
         DSb1p1.init(this, &DSLBattleship, { &Tbattleship });
         DSmissile.init(this, &DSLBattleship, { &Tmissile });
-        DSVerticalPlaneA.init(this, &DSLPlane, { &TverticalPlane });  // Inizializza il descriptor set per il piano verticale con la sua texture
-        DSVerticalPlaneB.init(this, &DSLPlane, { &TverticalPlane });
+        DSVerticalPlane.init(this, &DSLVerticalPlane, { &TverticalPlane });  // Inizializza il descriptor set per il piano verticale con la sua texture
         DSExplosionSphere.init(this, &DSLBattleship, { &TExplosionSphere });
-        //DSmoon.init(this, &DSLEmission, { &Tmoon });
 
         DSGlobal.init(this, &DSLGlobal, {});
 
@@ -381,8 +353,8 @@ protected:
         // Cleanup pipelines
         PskyBox.cleanup();
         PPlane.cleanup();
+        PVerticalPlane.cleanup();
         PBattleship.cleanup();
-        //PEmission.cleanup();
 
         DSskyBox.cleanup();
         DSPlane.cleanup();
@@ -392,10 +364,8 @@ protected:
         DSb1p1.cleanup();
         DSmissile.cleanup();
         DSGlobal.cleanup();
-        DSVerticalPlaneA.cleanup();
-        DSVerticalPlaneB.cleanup();
+        DSVerticalPlane.cleanup();
         DSExplosionSphere.cleanup();
-        //DSmoon.cleanup();
 
         txt.pipelinesAndDescriptorSetsCleanup();
     }
@@ -418,8 +388,7 @@ protected:
         Mb1p1.cleanup();
 
         TverticalPlane.cleanup();
-        MverticalPlaneA.cleanup();
-        MverticalPlaneB.cleanup();
+        MverticalPlane.cleanup();
 
         Tmissile.cleanup();
         Mmissile.cleanup();
@@ -427,22 +396,19 @@ protected:
         MExplosionSphere.cleanup();
         TExplosionSphere.cleanup();
 
-        //Mmoon.cleanup();
-        //Tmoon.cleanup();
 
         // Cleanup descriptor set layouts
         DSLGlobal.cleanup();
         DSLskyBox.cleanup();
         DSLPlane.cleanup();
+        DSLVerticalPlane.cleanup();
         DSLBattleship.cleanup();
-        //DSLEmission.cleanup();
-        //DSmissile.cleanup();
 
         // Destroies the pipelines
         PskyBox.destroy();
         PPlane.destroy();
+        PVerticalPlane.destroy();
         PBattleship.destroy();
-        //PEmission.destroy();
 
         txt.localCleanup();
     }
@@ -460,7 +426,8 @@ protected:
         // Bind the pipeline for the plane
         PPlane.bind(commandBuffer);
         MlargePlane.bind(commandBuffer);
-        DSPlane.bind(commandBuffer, PPlane, 0, currentImage);
+        DSGlobal.bind(commandBuffer, PPlane, 0, currentImage);
+        DSPlane.bind(commandBuffer, PPlane, 1, currentImage);
         // Draw the plane
         vkCmdDrawIndexed(commandBuffer,
             static_cast<uint32_t>(MlargePlane.indices.size()), NPLANE, 0, 0, 0);
@@ -500,23 +467,12 @@ protected:
         vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(Mmissile.indices.size()), 1, 0, 0, 0);
 
         // Vertical plane
-        MverticalPlaneA.bind(commandBuffer);
-        DSVerticalPlaneA.bind(commandBuffer, PPlane, 0, currentImage);
-        vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(MverticalPlaneA.indices.size()), 1, 0, 0, 0);
-        MverticalPlaneB.bind(commandBuffer);
-        DSVerticalPlaneB.bind(commandBuffer, PPlane, 0, currentImage);
-        vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(MverticalPlaneB.indices.size()), 1, 0, 0, 0);
+        PVerticalPlane.bind(commandBuffer);
+        MverticalPlane.bind(commandBuffer);
+        DSGlobal.bind(commandBuffer, PPlane, 0, currentImage);
+        DSVerticalPlane.bind(commandBuffer, PVerticalPlane, 1, currentImage);
+        vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(MverticalPlane.indices.size()), NPLANE, 0, 0, 0);
         
-        MExplosionSphere.bind(commandBuffer);
-        DSExplosionSphere.bind(commandBuffer, PBattleship, 0, currentImage);
-        vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(MExplosionSphere.indices.size()), 1, 0, 0, 0);
-
-        /*
-        PEmission.bind(commandBuffer);
-        Mmoon.bind(commandBuffer);
-        DSmoon.bind(commandBuffer, PEmission, 0, currentImage);
-        vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(Mmoon.indices.size()), 1, 0, 0, 0);
-        */
 
         txt.populateCommandBuffer(commandBuffer, currentImage, currScene);
     }
@@ -545,10 +501,7 @@ protected:
         for (int i = 0; i < S; ++i) {
             for (int j = 0; j < T; ++j) {
                 matrix[i][j] = glm::translate(glm::mat4(1.0f), glm::vec3(22.0f * (j - 4), 0.0f, 22.0f * (i - 4)));
-                matrixB[i][j] = glm::translate(glm::mat4(1.0f), glm::vec3(22.0f * (j - 4), 0.0f, 22.0f * (i - 4)));
-                matrixB[i][j] = glm::rotate(matrixB[i][j], glm::radians(180.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-                matrixB[i][j] = glm::translate(matrixB[i][j], glm::vec3(0.0f, 0.0f, 193.0f));
-
+                matrixB[i][j] = glm::translate(glm::rotate(matrix[i][j], glm::radians(180.0f), glm::vec3(0.0f, 1.0f, 0.0f)), glm::vec3(0.0f, 0.0f, 193.0f));
             }
         }
 
@@ -578,73 +531,10 @@ protected:
 
         static float subpassTimer = 0.0;
 
-        /*if (glfwGetKey(window, GLFW_KEY_SPACE)) {
-            if (!debounce) {
-                debounce = true;
-                curDebounce = GLFW_KEY_SPACE;
-                if (currScene != 1) {
-                    currScene = (currScene + 1) % outText.size();
-
-                }
-                if (currScene == 1) {
-                    if (subpass >= 4) {
-                        currScene = 0;
-                    }
-                }
-                std::cout << "Scene : " << currScene << "\n";
-
-                RebuildPipeline();
-            }
-        }
-        else {
-            if ((curDebounce == GLFW_KEY_SPACE) && debounce) {
-                debounce = false;
-                curDebounce = 0;
-            }
-        }*/
-
         // Standard procedure to quit when the ESC key is pressed
         if (glfwGetKey(window, GLFW_KEY_ESCAPE)) {
             glfwSetWindowShouldClose(window, GL_TRUE);
         }
-
-        /*if (currScene == 1) {
-            switch (subpass) {
-            case 0:
-                ViewMatrix = glm::mat4(-0.0656882, -0.162777, 0.984474, 0, 0.0535786, 0.984606, 0.166374, 0, -0.996401, 0.0636756, -0.0559558, 0, 0.0649244, -0.531504, -3.26128, 1);
-                break;
-            case 1:
-                ViewMatrix = glm::mat4(-0.312507, -0.442291, 0.840666, 0, 0.107287, 0.862893, 0.493868, 0, -0.943837, 0.24453, -0.222207, 0, -0.0157694, -0.186147, -1.54649, 1);
-                break;
-            case 2:
-                ViewMatrix = glm::mat4(-0.992288, 0.00260993, -0.12393, 0, -0.0396232, 0.940648, 0.337063, 0, 0.117454, 0.339374, -0.93329, 0, 0.0335061, -0.0115242, -2.99662, 1);
-                break;
-            case 3:
-                ViewMatrix = glm::mat4(0.0942192, -0.242781, 0.965495, 0, 0.560756, 0.814274, 0.150033, 0, -0.822603, 0.527272, 0.212861, 0, -0.567191, -0.254532, -1.79143, 1);
-                break;
-            }
-        }
-
-        if (currScene == 1) {
-            subpassTimer += deltaT;
-            if (subpassTimer > 4.0f) {
-                subpassTimer = 0.0f;
-                subpass++;
-                std::cout << "Scene : " << currScene << " subpass: " << subpass << "\n";
-                char buf[20];
-                sprintf(buf, "FinalProject_%d.png", subpass);
-                saveScreenshot(buf, currentImage);
-                if (subpass == 4) {
-                    ViewMatrix = glm::translate(glm::mat4(1), -CamPos);
-
-
-                    currScene = 0;
-                    std::cout << "Scene : " << currScene << "\n";
-                    RebuildPipeline();
-                }
-            }
-        }
-        */
 
         // Here is where you actually update your uniforms
         glm::mat4 M = glm::perspective(glm::radians(45.0f), Ar, 0.1f, 1000.0f); // Projection matrix; If you want to see further icrease the last parameter
@@ -660,10 +550,23 @@ protected:
         // updates global uniforms
         // Global
         GlobalUniformBufferObject gubo{};
-        gubo.lightDir = glm::vec3(cos(glm::radians(135.0f)), sin(glm::radians(135.0f)), 0.0f);
-        gubo.lightColor = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
+        //Point Light
+        gubo.lightDir[0]= glm::vec3(cos(glm::radians(90.0f)), sin(glm::radians(90.0f)), 0.0f);
+        gubo.lightColor[0] = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
+        gubo.lightPos[0] = glm::vec3(0.0f, 4.0f,  -120.0f);
+
+        //Direct Light 1
+        gubo.lightDir[1] = glm::vec3(0.0f, -1.0f, 0.0f);
+        gubo.lightColor[1] = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
+        gubo.lightPos[1] = glm::vec3(0.0f, 10.0f, 0.0f);
+
+
+        //Direct Light 2    
+        gubo.lightDir[2] = glm::vec3(0.0f,-1.0f, 0.0f);
+        gubo.lightColor[2] = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
+        gubo.lightPos[2] = glm::vec3(0.0f, -10.0f, 0.0f);
+
         gubo.eyePos = glm::vec3(glm::inverse(ViewMatrix) * glm::vec4(0, 0, 0, 1));
-        gubo.eyeDir = glm::vec4(0, 0, 0, 1) * ViewMatrix;
         DSGlobal.map(currentImage, &gubo, 0);
 
         PlaneUniformBufferObject pubo{};
@@ -672,43 +575,28 @@ protected:
         pubo.mMat[0] = glm::mat4(1.0f);
         pubo.mvpMat[0] = ViewPrj * pubo.mMat[0];
         pubo.nMat[0] = glm::inverse(glm::transpose(pubo.mMat[0]));
-        pubo.color[0] = glm::vec4(1.0f);
 
         pubo.mMat[1] = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -195.0f));
         pubo.mvpMat[1] = ViewPrj * pubo.mMat[1];
         pubo.nMat[1] = glm::inverse(glm::transpose(pubo.mMat[1]));
-        pubo.color[1] = glm::vec4(1.0f);
 
         DSPlane.map(currentImage, &pubo, 0);
-        DSPlane.map(currentImage, &gubo, 2);
 
         skyBoxUniformBufferObject sbubo{};
         sbubo.mvpMat = M * glm::mat4(glm::mat3(Mv));
         DSskyBox.map(currentImage, &sbubo, 0);
 
-        /*
-        EmissionUniformBufferObject eubo{};
-        eubo.mvpMat = ViewPrj * glm::translate(glm::mat4(1.0f), gubo.lightDir * 40.0f) * glm::mat4(1.0f);
-        DSmoon.map(currentImage, &eubo, 0);
-        */
-
         //For the vertical plane
-        UniformBufferObject uboVerticalPlaneA{};
-        UniformBufferObject uboVerticalPlaneB{};
-        uboVerticalPlaneA.mMat = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, 0.0f)) * glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-        uboVerticalPlaneA.mvpMat = ViewPrj * uboVerticalPlaneA.mMat;
-        uboVerticalPlaneA.nMat = glm::inverse(glm::transpose(uboVerticalPlaneA.mMat));
-        uboVerticalPlaneA.color = glm::vec4(1.0f);  // Colore del piano verticale
+        PlaneUniformBufferObject Vpubo{};
+        Vpubo.mMat[0] = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, 0.0f)) * glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+        Vpubo.mvpMat[0] = ViewPrj * Vpubo.mMat[0];
+        Vpubo.nMat[0] = glm::inverse(glm::transpose(Vpubo.mMat[0]));
 
-        uboVerticalPlaneB.mMat = glm::translate(glm::rotate(glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -1.0f)) * glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f)), glm::radians(180.0f), glm::vec3(0.0f, 1.0f, 0.0f)), glm::vec3(-194.0f, 0.0f, 0.0f));
-        uboVerticalPlaneB.mvpMat = ViewPrj * uboVerticalPlaneB.mMat;
-        uboVerticalPlaneB.nMat = glm::inverse(glm::transpose(uboVerticalPlaneB.mMat));
-        uboVerticalPlaneB.color = glm::vec4(1.0f);  // Colore del piano verticale
+        Vpubo.mMat[1] = glm::translate(glm::rotate(glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -1.0f)) * glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f)), glm::radians(180.0f), glm::vec3(0.0f, 1.0f, 0.0f)), glm::vec3(-194.0f, 0.0f, 0.0f));
+        Vpubo.mvpMat[1] = ViewPrj * Vpubo.mMat[1];
+        Vpubo.nMat[1] = glm::inverse(glm::transpose(Vpubo.mMat[1]));
 
-        DSVerticalPlaneA.map(currentImage, &uboVerticalPlaneA, 0);
-        DSVerticalPlaneA.map(currentImage, &gubo, 2);
-        DSVerticalPlaneB.map(currentImage, &uboVerticalPlaneB, 0);
-        DSVerticalPlaneB.map(currentImage, &gubo, 2);
+        DSVerticalPlane.map(currentImage, &Vpubo, 0);
 
         UniformBufferObject uboMissile{};
         UniformBufferObject uboExplosion{};
@@ -991,8 +879,6 @@ protected:
                 ubo.color = glm::vec4(1.0f);
 
                 DSb0p0.map(currentImage, &ubo, 0);
-                DSb0p0.map(currentImage, &gubo, 2);
-
 
                 // Update uniforms for the battleship
                 ubo.mMat = matrix[B1P0_x][B1P0_y];
@@ -1001,7 +887,6 @@ protected:
                 ubo.color = glm::vec4(1.0f);
 
                 DSb1p0.map(currentImage, &ubo, 0);
-                DSb1p0.map(currentImage, &gubo, 2);
 
                 // TODO: mancano le battelship del giocatore 1 e vanno aggiunte mappandole sulla seconda tavola
                 ubo.mMat = matrixB[B0P1_x][B0P1_y];
@@ -1010,7 +895,6 @@ protected:
                 ubo.color = glm::vec4(1.0f);
 
                 DSb0p1.map(currentImage, &ubo, 0);
-                DSb0p1.map(currentImage, &gubo, 2);
 
                 ubo.mMat = matrixB[B1P1_x][B1P1_y];
                 ubo.mvpMat = ViewPrj * ubo.mMat;
@@ -1018,7 +902,6 @@ protected:
                 ubo.color = glm::vec4(1.0f);
 
                 DSb1p1.map(currentImage, &ubo, 0);
-                DSb1p1.map(currentImage, &gubo, 2);
 
                 currentState = WAITING_ATTACK_X;
                 boatVisible = true;

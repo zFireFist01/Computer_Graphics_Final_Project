@@ -1,38 +1,37 @@
 #version 450
+#extension GL_ARB_separate_shader_objects : enable
 
-const int NPLANE = 2; // Numero di piani
+// The attributes associated with each vertex.
+// Their type and location must match the definition given in the
+// corresponding Vertex Descriptor, and in turn, with the CPP data structure
+layout(location = 0) in vec3 inPosition;
+layout(location = 1) in vec3 inNorm;
+layout(location = 2) in vec2 inUV;
 
-// Uniform buffer object che contiene le matrici e i colori per i piani
-layout(binding = 0) uniform PlaneUniformBufferObject {
-    mat4 mvpMat[NPLANE];  // Matrici MVP (Model-View-Projection) per ciascun piano
-    mat4 mMat[NPLANE];    // Matrici Model per ciascun piano
-    mat4 nMat[NPLANE];    // Matrici Normali per ciascun piano
-    vec4 color[NPLANE];   // Colori per ciascun piano
+// this defines the variable passed to the Fragment Shader
+// the locations must match the one of its in variables
+layout(location = 0) out vec3 fragPos;
+layout(location = 1) out vec3 fragNorm;
+layout(location = 2) out vec2 fragUV;
+
+// Here the Uniform buffers are defined. In this case, the Transform matrices (Set 1, binding 0)
+// are used. Note that the definition must match the one used in the CPP code
+const int NPLANE=2;
+layout(set = 1, binding = 0) uniform UniformBufferObject {
+	mat4 mvpMat[NPLANE];
+	mat4 mMat[NPLANE];
+	mat4 nMat[NPLANE];
 } ubo;
 
-// Input dal vertex buffer
-layout(location = 0) in vec3 inPos;    // Posizione del vertice
-layout(location = 1) in vec2 inUV;     // Coordinate UV del vertice
-layout(location = 2) in vec3 inNormal; // Normale del vertice
-
-// Output verso il fragment shader
-layout(location = 1) out vec2 fragUV;       // Coordinate UV per la texture
-layout(location = 2) out vec3 fragNormal;   // Normale del vertice interpolata
-layout(location = 0) out vec3 fragPos;      // Posizione del vertice nel mondo
-
+// Here the shader simply computes clipping coordinates, and passes to the Fragment Shader
+// the position of the point in World Space, the transformed direction of the normal vector,
+// and the untouched (but interpolated) UV coordinates
 void main() {
-    // Usa gl_InstanceIndex per selezionare l'indice corretto nell'array di uniform
-    int index = gl_InstanceIndex;
-
-    // Passa le coordinate UV al fragment shader
-    fragUV = inUV;
-
-    // Trasforma la normale usando la matrice normale appropriata e normalizzala
-    fragNormal = normalize(mat3(ubo.nMat[index]) * inNormal);
-
-    // Calcola la posizione del vertice nello spazio mondo
-    fragPos = vec3(ubo.mMat[index] * vec4(inPos, 1.0));
-
-    // Calcola la posizione finale del vertice nel clip space usando la matrice MVP
-    gl_Position = ubo.mvpMat[index] * vec4(inPos, 1.0);
+	int i = gl_InstanceIndex ;
+	// Clipping coordinates must be returned in global variable gl_Posision
+	gl_Position = ubo.mvpMat[i] * vec4(inPosition, 1.0);
+	// Here the value of the out variables passed to the Fragment shader are computed
+	fragPos = (ubo.mMat[i] * vec4(inPosition, 1.0)).xyz;
+	fragNorm = (ubo.nMat[i] * vec4(inNorm, 0.0)).xyz;
+	fragUV = inUV;
 }

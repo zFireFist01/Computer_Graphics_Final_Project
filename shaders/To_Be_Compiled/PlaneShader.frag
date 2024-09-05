@@ -1,37 +1,80 @@
 #version 450
+#extension GL_ARB_separate_shader_objects : enable
 
-// Uniform per la texture
-layout(binding = 1) uniform sampler2D texSampler;
 
-// Input dal vertex shader
-layout(location = 1) in vec2 fragUV;        // Coordinate UV interpolate
-layout(location = 2) in vec3 fragNormal;    // Normale interpolata   
-layout(location = 0) in vec3 fragPos;       // Posizione del frammento nel mondo
+layout(location = 0) in vec3 fragPos;
+layout(location = 1) in vec3 fragNorm;
+layout(location = 2) in vec2 fragUV;
 
-// Output del colore finale
 layout(location = 0) out vec4 outColor;
 
 
+layout(set = 0, binding = 0) uniform GlobalUniformBufferObject {
+	vec3 lightDir[3];
+	vec3 lightPos[3];
+	vec4 lightColor[3];
+	vec3 eyePos;
+} gubo;
+
+
+layout(set = 1, binding = 1) uniform sampler2D tex;
+
+
+
+vec3 BRDF(vec3 Albedo, vec3 Norm, vec3 EyeDir, vec3 LD){
+    vec3 Diffuse;
+    vec3 Specular;
+    Diffuse = Albedo * max(dot(Norm, LD), 0.0f);
+    Specular = vec3(pow(max(dot(EyeDir, -reflect(LD, Norm)), 0.0f), 160.0f));
+
+    return Diffuse + Specular;
+}
+
+
 void main() {
-    // Normalizza la normale interpolata per l'illuminazione
-    vec3 norm = normalize(fragNormal);
 
-    // Normalizza la direzione della luce
-    vec3 lightDir = normalize(vec3(0.0, 1.0, 0.0));
+    //For PointLight regulations
+	float constant = 1.0;
+	float linear = 0.0001;
+	float quadratic = 0.0001;
+    // PointLight
 
-    // Calcola l'illuminazione diffusa con il prodotto scalare tra normale e direzione della luce
-    float diff = max(dot(norm, lightDir), 0.0);
+    vec3 lightColor[3];
+    vec3 lightDir[3];
 
-    // Campiona il colore della texture usando le coordinate UV interpolate
-    vec4 texColor = texture(texSampler, fragUV);
+    vec3 Norm = normalize(fragNorm);
+    vec3 EyeDir = normalize(gubo.eyePos - fragPos);
+    vec3 Albedo = texture(tex, fragUV).rgb;
 
-    // Calcola il colore finale del frammento combinando colore del piano, texture e illuminazione
-    outColor =  texColor * diff;
+    vec3 RendEqSol = vec3(0.0f);
 
-    // Aggiunge un minimo di luminosità per evitare che i frammenti diventino completamente neri
-    // Aumentato per illuminare maggiormente la scena
-    outColor.rgb += 0.2 * texColor.rgb;
+    //Point Light
+    lightDir[0] = normalize(gubo.lightDir[0]);
+    float distance = length(gubo.lightPos[0] - fragPos);
+    
+    // Modifica dell'attenuazione per aumentare il raggio d'azione
+    float attenuation = 1.0 / (constant + linear * distance + quadratic * distance * distance);
 
-    // Aumenta la componente di luce ambientale
-    outColor.rgb = mix(outColor.rgb,  texColor.rgb, 0.3);
+    lightColor[0] = gubo.lightColor[0].rgb * attenuation * gubo.lightColor[0].a;
+
+    RendEqSol += BRDF(Albedo, Norm, EyeDir, lightDir[0]) * lightColor[0];
+
+
+    //DirectLight 1
+    lightDir[1] = normalize(gubo.lightDir[1]);  
+    lightColor[1] = gubo.lightColor[1].rgb;
+    RendEqSol += BRDF(Albedo, Norm, EyeDir, lightDir[1]) * lightColor[1];
+
+
+    //DirectLight 2
+    lightDir[2] = normalize(gubo.lightDir[2]);  
+    lightColor[2] = gubo.lightColor[2].rgb;
+    RendEqSol += BRDF(Albedo, Norm, EyeDir, lightDir[2]) * lightColor[2];
+
+
+    vec3 Ambient = texture(tex, fragUV).rgb * 0.025f;
+
+    RendEqSol += Ambient;
+    
+    outColor = vec4(RendEqSol, 1.0f);
 }
