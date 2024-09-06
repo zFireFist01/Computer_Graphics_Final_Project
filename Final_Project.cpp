@@ -27,7 +27,6 @@ struct GlobalUniformBufferObject {
     alignas(16) glm::vec3 lightDir[3];
     alignas(16) glm::vec3 lightPos[3];
     alignas(16) glm::vec4 lightColor[3];
-    alignas(16) glm::vec3 eyeDir;
     alignas(16) glm::vec3 eyePos;
 };
 
@@ -575,7 +574,6 @@ protected:
         gubo.lightDir[2] = glm::vec3(0.0f,-1.0f, 0.0f);
         gubo.lightColor[2] = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
         gubo.lightPos[2] = glm::vec3(0.0f, -10.0f, 0.0f);
-        gubo.eyeDir = glm::vec3(glm::inverse(ViewMatrix) * glm::vec4(0, 0, -1, 0));
         gubo.eyePos = glm::vec3(glm::inverse(ViewMatrix) * glm::vec4(0, 0, 0, 1));
         DSGlobal.map(currentImage, &gubo, 0);
 
