@@ -3,7 +3,6 @@
 #include "modules/Starter.hpp"
 #include "modules/TextMaker.hpp"
 
-
 #define NPLANE 2
 
 std::vector<SingleText> outText = {
@@ -28,6 +27,7 @@ struct GlobalUniformBufferObject {
     alignas(16) glm::vec3 lightDir[3];
     alignas(16) glm::vec3 lightPos[3];
     alignas(16) glm::vec4 lightColor[3];
+    alignas(16) glm::vec3 eyeDir;
     alignas(16) glm::vec3 eyePos;
 };
 
@@ -59,7 +59,6 @@ struct skyBoxUniformBufferObject {
     alignas(16) glm::mat4 mvpMat;
 };
 
-
 // The vertices data structures
 struct skyBoxVertex {
     glm::vec3 pos;
@@ -70,7 +69,6 @@ struct Vertex {
     glm::vec2 UV;
     glm::vec3 norm;
 };
-
 
 // MAIN ! 
 class FinalProject : public BaseProject {
@@ -131,7 +129,7 @@ protected:
     Model Mmissile;
     Texture Tmissile;
     DescriptorSet DSmissile;
-
+    
     Model MExplosionSphere;
     Texture TExplosionSphere;
     DescriptorSet DSExplosionSphere;
@@ -141,12 +139,14 @@ protected:
     int subpass = 0;
     int currPlayer = 0;
 
-    glm::vec3 CamPos = glm::vec3(0.0f, 50.0f, 100.0f);
+    glm::vec3 CamPos;
     glm::mat4 ViewMatrix;
-    float CamAlpha = 0.0f;
-    float CamBeta = 0.0f;
-
+    float CamAlpha;
+    float CamBeta;
+    glm::vec3 forward;
     float Ar;
+    const float ROT_SPEED = glm::radians(120.0f);
+    const float MOVE_SPEED = 30.0f; //If you want to move faster, increase this value
 
     // Player boats data:
     // Boats coordinates
@@ -177,6 +177,9 @@ protected:
     bool inputYSet = false;  // True se il targetY � stato inserito
     bool boatVisible = false;
     bool isMissileVisible = false;
+    float x;
+    float y;
+    float z;
 
     //Explosion variables
     glm::vec3 explosionCenter = glm::vec3(0.0f, -100.0f, 0.0f);
@@ -185,6 +188,10 @@ protected:
     float explosionTime = 0.0f;
     float explosionDuration = 3.0f;
     bool isExplosionVisible = false;
+
+    // Creiamo una matrice S x T di glm::mat4
+    glm::mat4 matrix[9][9];
+    glm::mat4 matrixB[9][9];
 
     // Here you set the main application parameters
     void setWindowParameters() {
@@ -325,7 +332,22 @@ protected:
         std::cout << "Textures in the Pool        : " << DPSZs.texturesInPool << "\n";
         std::cout << "Descriptor Sets in the Pool : " << DPSZs.setsInPool << "\n";
 
-        ViewMatrix = glm::translate(glm::mat4(1), -CamPos);
+        CamPos = glm::vec3(0.0f, 50.0f, 100.0f);
+        ViewMatrix = glm::lookAt(CamPos, glm::vec3(0.0f, 50.0f, -300.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+        forward = glm::normalize(glm::vec3(-ViewMatrix[2][0], -ViewMatrix[2][1], -ViewMatrix[2][2]));
+        CamAlpha = glm::atan(forward.x, forward.z);
+        CamBeta = glm::asin(forward.y);
+
+        //glm::mat4(1.0f) traslata di 1.5 rispetto all'asse x è il centro della scacchiera
+        //Ogni elemento della colonna 5 ha una traslazione x di 1.5f
+        //Ogni elemento si muove a multipli di 21.3f rispetto alla z
+        // Ora costruiamo la scacchiera con le rispettive matrici
+        for (int i = 0; i < 9; ++i) {
+            for (int j = 0; j < 9; ++j) {
+                matrix[i][j] = glm::translate(glm::mat4(1.0f), glm::vec3(22.0f * (j - 4), 0.0f, 22.0f * (i - 4)));
+                matrixB[i][j] = glm::translate(glm::rotate(matrix[i][j], glm::radians(180.0f), glm::vec3(0.0f, 1.0f, 0.0f)), glm::vec3(0.0f, 0.0f, 193.0f));
+            }
+        }
     }
 
     // Here you create your pipelines and Descriptor Sets!
@@ -402,7 +424,6 @@ protected:
 
         MExplosionSphere.cleanup();
         TExplosionSphere.cleanup();
-
 
         // Cleanup descriptor set layouts
         DSLGlobal.cleanup();
@@ -495,51 +516,10 @@ protected:
         static bool debounce = false;
         static int curDebounce = 0;
 
-        int S = 9;  // Numero di righe
-        int T = 9;  // Numero di colonne
-        // Creiamo una matrice S x T di glm::mat4
-        std::vector<std::vector<glm::mat4>> matrix(S, std::vector<glm::mat4>(T));
-        std::vector<std::vector<glm::mat4>> matrixB(S, std::vector<glm::mat4>(T));
-
-        // Inizializzazione degli elementi della matrice
-        for (int i = 0; i < S; ++i) {
-            for (int j = 0; j < T; ++j) {
-                matrix[i][j] = glm::mat4(1.0f); // Inizializza ogni glm::mat4 come matrice identità
-                matrixB[i][j] = glm::mat4(1.0f);
-            }
-        }
-
-        // Ora costruiamo la scacchiera con le rispettive matrici
-        for (int i = 0; i < S; ++i) {
-            for (int j = 0; j < T; ++j) {
-                matrix[i][j] = glm::translate(glm::mat4(1.0f), glm::vec3(22.0f * (j - 4), 0.0f, 22.0f * (i - 4)));
-                matrixB[i][j] = glm::translate(glm::rotate(matrix[i][j], glm::radians(180.0f), glm::vec3(0.0f, 1.0f, 0.0f)), glm::vec3(0.0f, 0.0f, 193.0f));
-            }
-        }
-
-        //glm::mat4(1.0f) traslata di 1.5 rispetto all'asse x è il centro della scacchiera
-        //Ogni elemento della colonna 5 ha una traslazione x di 1.5f
-        //Ogni elemento si muove a multipli di 21.3f rispetto alla z
-
         float deltaT;
         glm::vec3 m = glm::vec3(0.0f), r = glm::vec3(0.0f);
         bool fire = false;
         getSixAxis(deltaT, m, r, fire);
-
-        const float ROT_SPEED = glm::radians(120.0f);
-        const float MOVE_SPEED = 30.0f; //If you want to move faster, increase this value
-
-        // The Fly model update proc.
-        CamAlpha = CamAlpha - ROT_SPEED * deltaT * r.y;
-        CamBeta = CamBeta - ROT_SPEED * deltaT * r.x;
-        CamBeta = CamBeta < glm::radians(-90.0f) ? glm::radians(-90.0f) :
-            (CamBeta > glm::radians(90.0f) ? glm::radians(90.0f) : CamBeta);
-
-        glm::vec3 ux = glm::rotate(glm::mat4(1.0f), CamAlpha, glm::vec3(0, 1, 0)) * glm::vec4(1, 0, 0, 1);
-        glm::vec3 uz = glm::rotate(glm::mat4(1.0f), CamAlpha, glm::vec3(0, 1, 0)) * glm::vec4(0, 0, 1, 1);
-        CamPos = CamPos + MOVE_SPEED * m.x * ux * deltaT;
-        CamPos = CamPos + MOVE_SPEED * m.y * glm::vec3(0, 1, 0) * deltaT;
-        CamPos = CamPos + MOVE_SPEED * m.z * uz * deltaT;
 
         static float subpassTimer = 0.0;
 
@@ -548,14 +528,33 @@ protected:
             glfwSetWindowShouldClose(window, GL_TRUE);
         }
 
+        if (currentState == WAITING_ATTACK_X || currentState == WAITING_ATTACK_Y || currentState == WAITING_BOAT_X || currentState == WAITING_BOAT_Y) {
+            // The Fly model update proc.
+            CamAlpha = CamAlpha - ROT_SPEED * deltaT * r.y;
+            CamBeta = CamBeta - ROT_SPEED * deltaT * r.x;
+            CamBeta = CamBeta < glm::radians(-90.0f) ? glm::radians(-90.0f) :
+                (CamBeta > glm::radians(90.0f) ? glm::radians(90.0f) : CamBeta);
+
+            glm::vec3 ux = glm::rotate(glm::mat4(1.0f), CamAlpha, glm::vec3(0, 1, 0)) * glm::vec4(1, 0, 0, 1);
+            glm::vec3 uz = glm::rotate(glm::mat4(1.0f), CamAlpha, glm::vec3(0, 1, 0)) * glm::vec4(0, 0, 1, 1);
+            CamPos = CamPos - MOVE_SPEED * m.x * ux * deltaT;
+            CamPos = CamPos + MOVE_SPEED * m.y * glm::vec3(0, 1, 0) * deltaT;
+            CamPos = CamPos - MOVE_SPEED * m.z * uz * deltaT;
+            forward = glm::vec3(
+                cos(CamBeta) * sin(CamAlpha),
+                sin(CamBeta),
+                cos(CamBeta) * cos(CamAlpha)
+            );
+
+            // Use lookAt to generate the view matrix
+            ViewMatrix = glm::lookAt(CamPos, CamPos + forward, glm::vec3(0.0f, 1.0f, 0.0f));
+        }
+
         // Here is where you actually update your uniforms
         glm::mat4 M = glm::perspective(glm::radians(45.0f), Ar, 0.1f, 1000.0f); // Projection matrix; If you want to see further icrease the last parameter
         M[1][1] *= -1;
 
-        glm::mat4 Mv = glm::rotate(glm::mat4(1.0), -CamBeta, glm::vec3(1, 0, 0)) *
-            glm::rotate(glm::mat4(1.0), -CamAlpha, glm::vec3(0, 1, 0)) *
-            glm::translate(glm::mat4(1.0), -CamPos);
-
+        glm::mat4 Mv = ViewMatrix;
         glm::mat4 ViewPrj = M * Mv;
         glm::mat4 baseTr = glm::mat4(1.0f);
 
@@ -572,12 +571,11 @@ protected:
         gubo.lightColor[1] = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
         gubo.lightPos[1] = glm::vec3(0.0f, 10.0f, 0.0f);
 
-
         //Direct Light 2    
         gubo.lightDir[2] = glm::vec3(0.0f,-1.0f, 0.0f);
         gubo.lightColor[2] = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
         gubo.lightPos[2] = glm::vec3(0.0f, -10.0f, 0.0f);
-
+        gubo.eyeDir = glm::vec3(glm::inverse(ViewMatrix) * glm::vec4(0, 0, -1, 0));
         gubo.eyePos = glm::vec3(glm::inverse(ViewMatrix) * glm::vec4(0, 0, 0, 1));
         DSGlobal.map(currentImage, &gubo, 0);
 
@@ -1020,18 +1018,15 @@ protected:
                         missileEndPos = targetPosition;
                     }
                     // Reset degli input per il prossimo round
-                    h = length(missileEndPos - missileStartPos) * 0.4;
+                    h = length(missileEndPos - missileStartPos) * 0.8;
                     currentState = ANIMATING_MISSILE;
                 }
+                isMissileVisible = true;
+                missileStartPos = glm::vec3(0.0f, 0.0f, 100.0f + (-400.0f * currPlayer));
                 break;
             }
 
             case ANIMATING_MISSILE: {
-                isMissileVisible = true;
-
-                //Start position function
-                missileStartPos = glm::vec3(0.0f, 0.0f, 100.0f + (-400.0f * currPlayer));
-
                 // Aggiorna la posizione del missile
                 missileTime += deltaT / totalTime; // Aggiorna il tempo normalizzato (0 -> 1)
 
@@ -1039,16 +1034,15 @@ protected:
                 missileTime = glm::clamp(missileTime, 0.0f, 1.0f);
 
                 // Calcola la nuova posizione del missile
-                float t = missileTime;
-                float x = missileStartPos.x + t * (missileEndPos.x - missileStartPos.x);
-                float y = missileStartPos.y + 4 * h * t * (1.0f - t);  // Vertical component for the parabolic arc
-                float z = missileStartPos.z + t * (missileEndPos.z - missileStartPos.z);  // Horizontal direction
+                x = missileStartPos.x + missileTime * (missileEndPos.x - missileStartPos.x);
+                y = missileStartPos.y + 4 * h * missileTime * (1.0f - missileTime);  // Vertical component for the parabolic arc
+                z = missileStartPos.z + missileTime * (missileEndPos.z - missileStartPos.z);  // Horizontal direction
 
                 missilePos = glm::vec3(x, y, z);
 
                 glm::vec3 velocity = glm::normalize(glm::vec3(
                     missileEndPos.x - missileStartPos.x,
-                    4 * h * (1.0f - 2.0f * t),  // Derivative of the vertical parabolic function
+                    4 * h * (1.0f - 2.0f * missileTime),  // Derivative of the vertical parabolic function
                     missileEndPos.z - missileStartPos.z
                 ));
 
@@ -1077,7 +1071,6 @@ protected:
                     uboMissile.mMat = modelMatrix;  // Apply the transformation
                     uboMissile.mvpMat = ViewPrj * uboMissile.mMat;
                     uboMissile.nMat = glm::inverse(glm::transpose(uboMissile.mMat));
-                    uboMissile.color = glm::vec4(1.0f);
 
                     isMissileVisible = false;
                     currPlayer = (currPlayer + 1) % 2;
@@ -1086,6 +1079,9 @@ protected:
                     if (currPlayer == 1) {
                         CamPos = glm::vec3(0.0f, 50.0f, -300.0f);  // Posizione dietro al vertical plane
                         ViewMatrix = glm::lookAt(CamPos, glm::vec3(0.0f, 50.0f, 100.0f), glm::vec3(0.0f, 1.0f, 0.0f));  // TODO: non guarda verso il piano verticale
+                        forward = glm::normalize(glm::vec3(-ViewMatrix[2][0], -ViewMatrix[2][1], -ViewMatrix[2][2]));
+                        CamBeta = glm::asin(forward.y);
+                        CamAlpha = glm::atan(forward.x, forward.z);
                         if (targetX == B0P1_x && targetY == B0P1_y) {
                             B0P1Alive = false;
                             isExplosionVisible = true;
@@ -1106,6 +1102,9 @@ protected:
                     else {
                         CamPos = glm::vec3(0.0f, 50.0f, 100.0f);
                         ViewMatrix = glm::lookAt(CamPos, glm::vec3(0.0f, 50.0f, -300.0f), glm::vec3(0.0f, 1.0f, 0.0f)); // TODO: non guarda verso il piano verticale
+                        forward = glm::normalize(glm::vec3(-ViewMatrix[2][0], -ViewMatrix[2][1], -ViewMatrix[2][2]));
+                        CamBeta = glm::asin(forward.y);
+                        CamAlpha = glm::atan(forward.x, forward.z);
                         if (targetX == B0P0_x && targetY == B0P0_y) {
                             B0P0Alive = false;
                             isExplosionVisible = true;
@@ -1130,13 +1129,13 @@ protected:
                 }
                 else {
                     CamPos = missilePos + glm::vec3(0.0f, 4.0f, 0.0f);
-                    glm::vec3 cameraTarget = missilePos + velocity;
-                    ViewMatrix = glm::lookAt(CamPos, cameraTarget, up);
+                    forward = missileEndPos;// glm::normalize(velocity);
+                    ViewMatrix = glm::lookAt(CamPos, forward, up);
+
                     // Update the uniform buffer for the missile
                     uboMissile.mMat = modelMatrix;  // Apply the transformation
                     uboMissile.mvpMat = ViewPrj * uboMissile.mMat;
                     uboMissile.nMat = glm::inverse(glm::transpose(uboMissile.mMat));
-                    uboMissile.color = glm::vec4(1.0f);
 
                     DSmissile.map(currentImage, &uboMissile, 0);
                 }
@@ -1160,10 +1159,16 @@ protected:
                     if (currPlayer == 1) {
                         CamPos = glm::vec3(0.0f, 50.0f, -300.0f);  // Posizione dietro al vertical plane
                         ViewMatrix = glm::lookAt(CamPos, glm::vec3(0.0f, 50.0f, 100.0f), glm::vec3(0.0f, 1.0f, 0.0f));  // TODO: non guarda verso il piano verticale
+                        forward = glm::normalize(glm::vec3(-ViewMatrix[2][0], -ViewMatrix[2][1], -ViewMatrix[2][2]));
+                        CamBeta = glm::asin(forward.y);
+                        CamAlpha = glm::atan(forward.x, forward.z);
                     }
                     else {
                         CamPos = glm::vec3(0.0f, 50.0f, 100.0f);
                         ViewMatrix = glm::lookAt(CamPos, glm::vec3(0.0f, 50.0f, -300.0f), glm::vec3(0.0f, 1.0f, 0.0f)); // TODO: non guarda verso il piano verticale
+                        forward = glm::normalize(glm::vec3(-ViewMatrix[2][0], -ViewMatrix[2][1], -ViewMatrix[2][2]));
+                        CamBeta = glm::asin(forward.y);
+                        CamAlpha = glm::atan(forward.x, forward.z);
                     }
                 }
 
