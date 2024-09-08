@@ -132,6 +132,11 @@ protected:
     Texture TExplosionSphere;
     DescriptorSet DSExplosionSphere;
 
+
+    GlobalUniformBufferObject gubo;
+    PlaneUniformBufferObject pubo;
+    PlaneUniformBufferObject Vpubo;
+
     // Other application parameters
     int currScene = 0;
     int subpass = 0;
@@ -294,7 +299,7 @@ protected:
         Mb0p1.init(this, &VDBattleship, "models/Warships/Battleship.obj", OBJ);
         Mb1p1.init(this, &VDBattleship, "models/Warships/Battleship.obj", OBJ);
         Mmissile.init(this, &VDBattleship, "models/Missile/missile3.obj", OBJ);
-        MverticalPlane.init(this, &VDPlane, "models/LargePlane3.obj", OBJ);  // Inizializza il modello del piano verticale
+        MverticalPlane.init(this, &VDPlane, "models/VerticalPlane.obj", OBJ);  // Inizializza il modello del piano verticale
         MExplosionSphere.init(this, &VDBattleship, "models/Sphere.obj", OBJ);
 
         // Create the textures
@@ -496,6 +501,41 @@ protected:
         vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(MExplosionSphere.indices.size()), 1, 0, 0, 0);
 
         txt.populateCommandBuffer(commandBuffer, currentImage, currScene);
+
+        staticUniformBuffer(currentImage);
+    }
+
+
+    void staticUniformBuffer(uint32_t currentImage) {
+        //Point Light
+        gubo.lightDir[0]= glm::vec4(cos(glm::radians(90.0f)), sin(glm::radians(90.0f)), 0.0f, 1.0f);
+        gubo.lightColor[0] = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
+        gubo.lightPos = glm::vec4(0.0f, 4.0f,  -100.0f, 1.0f);
+
+        //Direct Light 1
+        gubo.lightDir[1] = glm::vec4(0.0f, 0.0f, -1.0f, 1.0f);
+        gubo.lightColor[1] = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f); 
+
+        //Direct Light 2    
+        gubo.lightDir[2] = glm::vec4(0.0f, 0.0f, 1.0f, 1.0f);
+        gubo.lightColor[2] = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
+
+        gubo.eyePos = glm::vec4(100.0f, 120.0f, 200.0f, 1.0f);
+
+
+        // Update uniforms for the plane
+        pubo.mMat[0] = glm::mat4(1.0f);
+        pubo.nMat[0] = glm::inverse(glm::transpose(pubo.mMat[0]));
+
+        pubo.mMat[1] = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -195.0f));
+        pubo.nMat[1] = glm::inverse(glm::transpose(pubo.mMat[1]));
+
+        // Update uniforms for the vertical plane
+        Vpubo.mMat[0] = glm::mat4(1.0f) * glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+        Vpubo.nMat[0] = glm::inverse(glm::transpose(Vpubo.mMat[0]));
+
+        Vpubo.mMat[1] = glm::translate(glm::rotate(glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -1.0f)) * glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f)), glm::radians(180.0f), glm::vec3(0.0f, 1.0f, 0.0f)), glm::vec3(-194.0f, 0.0f, 0.0f));
+        Vpubo.nMat[1] = glm::inverse(glm::transpose(Vpubo.mMat[1]));
     }
 
     // Here is where you update the uniforms.
@@ -546,36 +586,12 @@ protected:
         glm::mat4 ViewPrj = M * Mv;
         glm::mat4 baseTr = glm::mat4(1.0f);
 
-        // updates global uniforms
-        // Global
-        GlobalUniformBufferObject gubo{};
-        //Point Light
-        gubo.lightDir[0]= glm::vec4(cos(glm::radians(90.0f)), sin(glm::radians(90.0f)), 0.0f, 1.0f);
-        gubo.lightColor[0] = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
-        gubo.lightPos = glm::vec4(0.0f, 4.0f,  -100.0f, 1.0f);
-
-        //Direct Light 1
-        gubo.lightDir[1] = glm::vec4(0.0f, 0.0f, -1.0f, 1.0f);
-        gubo.lightColor[1] = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f); 
-
-        //Direct Light 2    
-        gubo.lightDir[2] = glm::vec4(0.0f, 0.0f, 1.0f, 1.0f);
-        gubo.lightColor[2] = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
-
-        gubo.eyePos = glm::vec4(100.0f, 120.0f, 200.0f, 1.0f);
 
         DSGlobal.map(currentImage, &gubo, 0);
 
-        PlaneUniformBufferObject pubo{};
-
         // Update uniforms for the plane
-        pubo.mMat[0] = glm::mat4(1.0f);
         pubo.mvpMat[0] = ViewPrj * pubo.mMat[0];
-        pubo.nMat[0] = glm::inverse(glm::transpose(pubo.mMat[0]));
-
-        pubo.mMat[1] = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -195.0f));
         pubo.mvpMat[1] = ViewPrj * pubo.mMat[1];
-        pubo.nMat[1] = glm::inverse(glm::transpose(pubo.mMat[1]));
 
         DSPlane.map(currentImage, &pubo, 0);
 
@@ -584,14 +600,8 @@ protected:
         DSskyBox.map(currentImage, &sbubo, 0);
 
         //For the vertical plane
-        PlaneUniformBufferObject Vpubo{};
-        Vpubo.mMat[0] = glm::mat4(1.0f) * glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
         Vpubo.mvpMat[0] = ViewPrj * Vpubo.mMat[0];
-        Vpubo.nMat[0] = glm::inverse(glm::transpose(Vpubo.mMat[0]));
-
-        Vpubo.mMat[1] = glm::translate(glm::rotate(glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -1.0f)) * glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f)), glm::radians(180.0f), glm::vec3(0.0f, 1.0f, 0.0f)), glm::vec3(-194.0f, 0.0f, 0.0f));
         Vpubo.mvpMat[1] = ViewPrj * Vpubo.mMat[1];
-        Vpubo.nMat[1] = glm::inverse(glm::transpose(Vpubo.mMat[1]));
 
         DSVerticalPlane.map(currentImage, &Vpubo, 0);
 
