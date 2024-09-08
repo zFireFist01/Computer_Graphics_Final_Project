@@ -148,7 +148,7 @@ protected:
     float CamBeta;
     glm::vec3 forward;
     float Ar;
-    const float ROT_SPEED = glm::radians(120.0f);
+    const float ROT_SPEED = glm::radians(80.0f);
     const float MOVE_SPEED = 30.0f; //If you want to move faster, increase this value
 
     // Player boats data:
@@ -165,6 +165,10 @@ protected:
     bool B1P0Alive = true;
     bool B0P1Alive = true;
     bool B1P1Alive = true;
+    bool B0P0Animated = false;
+    bool B1P0Animated = false;
+    bool B0P1Animated = false;
+    bool B1P1Animated = false;
 
     //missile trajectory data
     glm::vec3 missileStartPos = glm::vec3(0.0f, 0.0f, 100.0f);  // Posizione iniziale sopra il piano
@@ -183,7 +187,7 @@ protected:
     float x;
     float y;
     float z;
-
+    glm::vec3 velocity;
     //Explosion variables
     glm::vec3 explosionCenter = glm::vec3(0.0f, -100.0f, 0.0f);
     float explosionRadius = 0.0f;
@@ -303,7 +307,7 @@ protected:
         MExplosionSphere.init(this, &VDBattleship, "models/Sphere.obj", OBJ);
 
         // Create the textures
-        TskyBox.init(this, "textures/starmap_g4k.jpg");
+        TskyBox.init(this, "textures/cielo.jpg");
         TlargePlane.init(this, "textures/water_cropped_grid.jpg");
         Tbattleship.init(this, "textures/Metal.jpg");
         Tmissile.init(this, "textures/missile_texture.jpg");
@@ -1079,16 +1083,18 @@ protected:
                         forward = glm::normalize(glm::vec3(-ViewMatrix[2][0], -ViewMatrix[2][1], -ViewMatrix[2][2]));
                         CamBeta = glm::asin(forward.y);
                         CamAlpha = glm::atan(forward.x, forward.z);
-                        if (targetX == B0P1_x && targetY == B0P1_y) {
+                        if (targetX == B0P1_x && targetY == B0P1_y && B0P1Alive) {
                             B0P1Alive = false;
+                            B0P1Animated = true;
                             isExplosionVisible = true;
                             explosionCenter = missileEndPos;
                             explosionRadius = 0.0f;
                             explosionTime = 0.0f;
                             currentState = ANIMATING_EXPLOSION;
                         }
-                        else if (targetX == B1P1_x && targetY == B1P1_y) {
+                        else if (targetX == B1P1_x && targetY == B1P1_y && B1P1Alive) {
                             B1P1Alive = false;
+                            B1P1Animated = true;
                             isExplosionVisible = true;
                             explosionCenter = missileEndPos;
                             explosionRadius = 0.0f;
@@ -1102,16 +1108,18 @@ protected:
                         forward = glm::normalize(glm::vec3(-ViewMatrix[2][0], -ViewMatrix[2][1], -ViewMatrix[2][2]));
                         CamBeta = glm::asin(forward.y);
                         CamAlpha = glm::atan(forward.x, forward.z);
-                        if (targetX == B0P0_x && targetY == B0P0_y) {
+                        if (targetX == B0P0_x && targetY == B0P0_y && B0P0Alive) {
                             B0P0Alive = false;
+                            B0P0Animated = true;
                             isExplosionVisible = true;
                             explosionCenter = missileEndPos;
                             explosionRadius = 0.0f;
                             explosionTime = 0.0f;
                             currentState = ANIMATING_EXPLOSION;
                         }
-                        else if (targetX == B1P0_x && targetY == B1P0_y) {
+                        else if (targetX == B1P0_x && targetY == B1P0_y && B1P0Alive) {
                             B1P0Alive = false;
+                            B1P0Animated = true;
                             isExplosionVisible = true;
                             explosionCenter = missileEndPos;
                             explosionRadius = 0.0f;
@@ -1125,7 +1133,7 @@ protected:
                     targetY = -1;
                 }
                 else {
-                    CamPos = missilePos + glm::vec3(0.0f, 4.0f, 0.0f);
+                    CamPos = missilePos + glm::vec3(0.0f, 8.0f, 0.0f);
                     forward = missileEndPos;// glm::normalize(velocity);
                     ViewMatrix = glm::lookAt(CamPos, forward, up);
 
@@ -1152,6 +1160,10 @@ protected:
                     explosionRadius = 0.0f;
                     currentState = WAITING_ATTACK_X;
                     isExplosionVisible = false;
+                    B0P0Animated = false;
+                    B0P1Animated = false;
+                    B1P0Animated = false;
+                    B1P1Animated = false;
 
                     if (currPlayer == 1) {
                         CamPos = glm::vec3(0.0f, 50.0f, -300.0f);  // Posizione dietro al vertical plane
@@ -1194,7 +1206,7 @@ protected:
         UniformBufferObject ubo{};
         if (boatVisible) {
             // Update uniforms for the battleship
-            if (B0P0Alive || currentState == ANIMATING_EXPLOSION) {
+            if (B0P0Alive || B0P0Animated) {
                 ubo.mMat = matrix[B0P0_x][B0P0_y];
             }
             else {
@@ -1208,7 +1220,7 @@ protected:
             DSb0p0.map(currentImage, &ubo, 0);
 
             // Update uniforms for the battleship
-            if (B1P0Alive || currentState == ANIMATING_EXPLOSION) {
+            if (B1P0Alive || B1P0Animated) {
                 ubo.mMat = matrix[B1P0_x][B1P0_y];
             }
             else {
@@ -1222,7 +1234,7 @@ protected:
             DSb1p0.map(currentImage, &ubo, 0);
 
             // TODO: mancano le battelship del giocatore 1 e vanno aggiunte mappandole sulla seconda tavola
-            if (B0P1Alive || currentState == ANIMATING_EXPLOSION) {
+            if (B0P1Alive || B0P1Animated) {
                 ubo.mMat = matrixB[B0P1_x][B0P1_y];
             }
             else {
@@ -1235,7 +1247,7 @@ protected:
 
             DSb0p1.map(currentImage, &ubo, 0);
 
-            if (B1P1Alive || currentState == ANIMATING_EXPLOSION) {
+            if (B1P1Alive || B1P1Animated) {
                 ubo.mMat = matrixB[B1P1_x][B1P1_y];
             }
             else {
