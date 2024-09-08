@@ -24,10 +24,10 @@ std::vector<SingleText> outText = {
 
 // The uniform buffer object used in this example
 struct GlobalUniformBufferObject {
-    alignas(16) glm::vec3 lightDir[3];
-    alignas(16) glm::vec3 lightPos[3];
-    alignas(16) glm::vec4 lightColor[3];
-    alignas(16) glm::vec3 eyePos;
+    glm::vec4 lightDir[3];
+    glm::vec4 lightPos;
+    glm::vec4 lightColor[3];
+    glm::vec4 eyePos;
 };
 
 enum GameState {
@@ -42,20 +42,20 @@ enum GameState {
 };
 
 struct UniformBufferObject {
-    alignas(16) glm::mat4 mvpMat;
-    alignas(16) glm::mat4 mMat;
-    alignas(16) glm::mat4 nMat;
-    alignas(16) glm::vec4 color;
+    glm::mat4 mvpMat;
+    glm::mat4 mMat;
+    glm::mat4 nMat;
+    glm::vec4 color;
 };
 
 struct PlaneUniformBufferObject {
-    alignas(16) glm::mat4 mvpMat[NPLANE];
-    alignas(16) glm::mat4 mMat[NPLANE];
-    alignas(16) glm::mat4 nMat[NPLANE];
+    glm::mat4 mvpMat[NPLANE];
+    glm::mat4 mMat[NPLANE];
+    glm::mat4 nMat[NPLANE];
 };
 
 struct skyBoxUniformBufferObject {
-    alignas(16) glm::mat4 mvpMat;
+    glm::mat4 mvpMat;
 };
 
 // The vertices data structures
@@ -84,7 +84,6 @@ protected:
     // Vertex formats
     VertexDescriptor VDskyBox;
     VertexDescriptor VDPlane;
-    VertexDescriptor VDVerticalPlane;
     VertexDescriptor VDBattleship;
 
     // Pipelines [Shader couples]
@@ -255,16 +254,6 @@ protected:
                 {0, 2, VK_FORMAT_R32G32_SFLOAT, offsetof(Vertex, UV),
                     sizeof(glm::vec2), UV}
             });
-        VDVerticalPlane.init(this, {
-                    {0, sizeof(Vertex), VK_VERTEX_INPUT_RATE_VERTEX}
-            }, {
-                {0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, pos),
-                    sizeof(glm::vec3), POSITION},
-                {0, 1, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, norm),
-                    sizeof(glm::vec3), NORMAL},
-                {0, 2, VK_FORMAT_R32G32_SFLOAT, offsetof(Vertex, UV),
-                    sizeof(glm::vec2), UV}
-            });
         VDBattleship.init(this, {
                     {0, sizeof(Vertex), VK_VERTEX_INPUT_RATE_VERTEX}
             }, {
@@ -285,7 +274,7 @@ protected:
         PPlane.setAdvancedFeatures(VK_COMPARE_OP_LESS_OR_EQUAL, VK_POLYGON_MODE_FILL,
             VK_CULL_MODE_BACK_BIT, false);
 
-        PVerticalPlane.init(this, &VDVerticalPlane, "shaders/PlaneVert.spv", "shaders/PlaneFrag.spv", {&DSLGlobal, &DSLVerticalPlane });
+        PVerticalPlane.init(this, &VDPlane, "shaders/PlaneVert.spv", "shaders/PlaneFrag.spv", {&DSLGlobal, &DSLVerticalPlane });
         PVerticalPlane.setAdvancedFeatures(VK_COMPARE_OP_LESS_OR_EQUAL, VK_POLYGON_MODE_FILL,
             VK_CULL_MODE_BACK_BIT, false);
 
@@ -305,7 +294,7 @@ protected:
         Mb0p1.init(this, &VDBattleship, "models/Warships/Battleship.obj", OBJ);
         Mb1p1.init(this, &VDBattleship, "models/Warships/Battleship.obj", OBJ);
         Mmissile.init(this, &VDBattleship, "models/Missile/missile3.obj", OBJ);
-        MverticalPlane.init(this, &VDVerticalPlane, "models/LargePlane3.obj", OBJ);  // Inizializza il modello del piano verticale
+        MverticalPlane.init(this, &VDPlane, "models/LargePlane3.obj", OBJ);  // Inizializza il modello del piano verticale
         MExplosionSphere.init(this, &VDBattleship, "models/Sphere.obj", OBJ);
 
         // Create the textures
@@ -497,7 +486,7 @@ protected:
         // Vertical plane
         PVerticalPlane.bind(commandBuffer);
         MverticalPlane.bind(commandBuffer);
-        DSGlobal.bind(commandBuffer, PPlane, 0, currentImage);
+        DSGlobal.bind(commandBuffer, PVerticalPlane, 0, currentImage);
         DSVerticalPlane.bind(commandBuffer, PVerticalPlane, 1, currentImage);
         vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(MverticalPlane.indices.size()), NPLANE, 0, 0, 0);
         
@@ -561,20 +550,20 @@ protected:
         // Global
         GlobalUniformBufferObject gubo{};
         //Point Light
-        gubo.lightDir[0]= glm::vec3(cos(glm::radians(90.0f)), sin(glm::radians(90.0f)), 0.0f);
+        gubo.lightDir[0]= glm::vec4(cos(glm::radians(90.0f)), sin(glm::radians(90.0f)), 0.0f, 1.0f);
         gubo.lightColor[0] = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
-        gubo.lightPos[0] = glm::vec3(0.0f, 4.0f,  -120.0f);
+        gubo.lightPos = glm::vec4(0.0f, 4.0f,  -100.0f, 1.0f);
 
         //Direct Light 1
-        gubo.lightDir[1] = glm::vec3(0.0f, -1.0f, 0.0f);
-        gubo.lightColor[1] = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
-        gubo.lightPos[1] = glm::vec3(0.0f, 10.0f, 0.0f);
+        gubo.lightDir[1] = glm::vec4(0.0f, 0.0f, -1.0f, 1.0f);
+        gubo.lightColor[1] = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f); 
 
         //Direct Light 2    
-        gubo.lightDir[2] = glm::vec3(0.0f,-1.0f, 0.0f);
+        gubo.lightDir[2] = glm::vec4(0.0f, 0.0f, 1.0f, 1.0f);
         gubo.lightColor[2] = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
-        gubo.lightPos[2] = glm::vec3(0.0f, -10.0f, 0.0f);
-        gubo.eyePos = glm::vec3(glm::inverse(ViewMatrix) * glm::vec4(0, 0, 0, 1));
+
+        gubo.eyePos = glm::vec4(100.0f, 120.0f, 200.0f, 1.0f);
+
         DSGlobal.map(currentImage, &gubo, 0);
 
         PlaneUniformBufferObject pubo{};
@@ -596,7 +585,7 @@ protected:
 
         //For the vertical plane
         PlaneUniformBufferObject Vpubo{};
-        Vpubo.mMat[0] = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, 0.0f)) * glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+        Vpubo.mMat[0] = glm::mat4(1.0f) * glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
         Vpubo.mvpMat[0] = ViewPrj * Vpubo.mMat[0];
         Vpubo.nMat[0] = glm::inverse(glm::transpose(Vpubo.mMat[0]));
 
