@@ -94,6 +94,7 @@ protected:
 
     // Scenes and texts
     TextMaker txt;
+    bool rebuild = true;
 
     // Models, textures and Descriptor Sets (values assigned to the uniforms)
     DescriptorSet DSGlobal;
@@ -615,8 +616,12 @@ protected:
             case WAITING_BOAT_X: {
                 if (currPlayer == 0) {
                     if (B0P0_x == -1) {
-                        currScene = 0;
-                        RebuildPipeline();
+                        if (rebuild) {
+                            currScene = 0;
+                            RebuildPipeline();
+                            rebuild = false;
+                        }
+                        
                         if (!debounce) {
                             if (glfwGetKey(window, GLFW_KEY_0) == GLFW_PRESS) { B0P0_x = 0; debounce = true; }
                             if (glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS) { B0P0_x = 1; debounce = true; }
@@ -631,6 +636,7 @@ protected:
                             if (B0P0_x != -1) {
                                 std::cout << "B0P0_x set to: " << B0P0_x << "\n";
                                 currentState = WAITING_BOAT_Y;
+                                rebuild = true;
                             }
                         }
                         if (glfwGetKey(window, GLFW_KEY_0) == GLFW_RELEASE &&
@@ -646,8 +652,12 @@ protected:
                         }
                     }
                     else {
-                        currScene = 2;
-                        RebuildPipeline();
+                        if (rebuild) {
+                            currScene = 2;
+                            RebuildPipeline();
+                            rebuild = false;
+                        }
+                        
                         if (!debounce) {
                             if (glfwGetKey(window, GLFW_KEY_0) == GLFW_PRESS) { B1P0_x = 0; debounce = true; }
                             if (glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS) { B1P0_x = 1; debounce = true; }
@@ -662,6 +672,7 @@ protected:
                             if (B1P0_x != -1) {
                                 std::cout << "B1P0_x set to: " << B1P0_x << "\n";
                                 currentState = WAITING_BOAT_Y;
+                                rebuild = true;
                             }
                         }
                         if (glfwGetKey(window, GLFW_KEY_0) == GLFW_RELEASE &&
@@ -679,8 +690,12 @@ protected:
                 }
                 else {
                     if (B0P1_x == -1) {
-                        currScene = 4;
-                        RebuildPipeline();
+                        if (rebuild) {
+                            currScene = 4;
+                            RebuildPipeline();
+                            rebuild = false;
+                        }
+                        
                         if (!debounce) {
                             if (glfwGetKey(window, GLFW_KEY_0) == GLFW_PRESS) { B0P1_x = 0; debounce = true; }
                             if (glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS) { B0P1_x = 1; debounce = true; }
@@ -695,6 +710,7 @@ protected:
                             if (B0P1_x != -1) {
                                 std::cout << "B0P1_x set to: " << B0P1_x << "\n";
                                 currentState = WAITING_BOAT_Y;
+                                rebuild = true;
                             }
                         }
                         if (glfwGetKey(window, GLFW_KEY_0) == GLFW_RELEASE &&
@@ -710,8 +726,12 @@ protected:
                         }
                     }
                     else {
-                        currScene = 6;
-                        RebuildPipeline();
+                        if (rebuild) {
+                            currScene = 6;
+                            RebuildPipeline();
+                            rebuild = false;
+                        }
+
                         if (!debounce) {
                             if (glfwGetKey(window, GLFW_KEY_0) == GLFW_PRESS) { B1P1_x = 0; debounce = true; }
                             if (glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS) { B1P1_x = 1; debounce = true; }
@@ -726,6 +746,7 @@ protected:
                             if (B1P1_x != -1) {
                                 std::cout << "B1P1_x set to: " << B1P1_x << "\n";
                                 currentState = WAITING_BOAT_Y;
+                                rebuild = true;
                             }
                         }
                         if (glfwGetKey(window, GLFW_KEY_0) == GLFW_RELEASE &&
@@ -747,8 +768,12 @@ protected:
             case WAITING_BOAT_Y: {
                 if (currPlayer == 0) {
                     if (B0P0_y == -1) {
-                        currScene = 1;
-                        RebuildPipeline();
+                        if (rebuild) {
+                            currScene = 1;
+                            RebuildPipeline();
+                            rebuild = false;
+                        }
+
                         if (!debounce) {
                             if (glfwGetKey(window, GLFW_KEY_0) == GLFW_PRESS) { B0P0_y = 0; debounce = true; }
                             if (glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS) { B0P0_y = 1; debounce = true; }
@@ -763,6 +788,7 @@ protected:
                             if (B0P0_y != -1) {
                                 std::cout << "B0P0_y set to: " << B0P0_y << "\n";
                                 currentState = WAITING_BOAT_X;
+                                rebuild = true;
                             }
                         }
                         if (glfwGetKey(window, GLFW_KEY_0) == GLFW_RELEASE &&
@@ -778,8 +804,12 @@ protected:
                         }
                     }
                     else {
-                        currScene = 3;
-                        RebuildPipeline();
+                        if (rebuild) {
+                            currScene = 3;
+                            RebuildPipeline();
+                            rebuild = false;
+                        }
+                        
                         if (!debounce) {
                             if (glfwGetKey(window, GLFW_KEY_0) == GLFW_PRESS) { B1P0_y = 0; debounce = true; }
                             if (glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS) { B1P0_y = 1; debounce = true; }
@@ -795,6 +825,7 @@ protected:
                                 std::cout << "B1P0_y set to: " << B1P0_y << "\n";
                                 currentState = WAITING_BOAT_X;
                                 currPlayer = 1;
+                                rebuild = true;
                             }
                         }
                         if (glfwGetKey(window, GLFW_KEY_0) == GLFW_RELEASE &&
@@ -812,8 +843,12 @@ protected:
                 }
                 else {
                     if (B0P1_y == -1) {
-                        currScene = 5;
-                        RebuildPipeline();
+                        if (rebuild) {
+                            currScene = 5;
+                            RebuildPipeline();
+                            rebuild = false;
+                        }
+
                         if (!debounce) {
                             if (glfwGetKey(window, GLFW_KEY_0) == GLFW_PRESS) { B0P1_y = 0; debounce = true; }
                             if (glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS) { B0P1_y = 1; debounce = true; }
@@ -828,6 +863,7 @@ protected:
                             if (B0P1_y != -1) {
                                 std::cout << "B0P1_y set to: " << B0P1_y << "\n";
                                 currentState = WAITING_BOAT_X;
+                                rebuild = true;
                             }
                         }
                         if (glfwGetKey(window, GLFW_KEY_0) == GLFW_RELEASE &&
@@ -843,8 +879,12 @@ protected:
                         }
                     }
                     else {
-                        currScene = 7;
-                        RebuildPipeline();
+                        if (rebuild) {
+                            currScene = 7;
+                            RebuildPipeline();
+                            rebuild = false;
+                        }
+
                         if (!debounce) {
                             if (glfwGetKey(window, GLFW_KEY_0) == GLFW_PRESS) { B1P1_y = 0; debounce = true; }
                             if (glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS) { B1P1_y = 1; debounce = true; }
@@ -860,6 +900,7 @@ protected:
                                 std::cout << "B1P1_y set to: " << B1P1_y << "\n";
                                 currentState = PROCESSING_BOAT_INPUT;
                                 currPlayer = 0;
+                                rebuild = true;
                             }
                         }
                         if (glfwGetKey(window, GLFW_KEY_0) == GLFW_RELEASE &&
@@ -915,13 +956,17 @@ protected:
             }
 
             case WAITING_ATTACK_X: {
-                if (currPlayer == 0) {
-                    currScene = 8;
+                if (rebuild) {
+                    if (currPlayer == 0) {
+                        currScene = 8;
+                    }
+                    else {
+                        currScene = 10;
+                    }
+                    RebuildPipeline();
+                    rebuild = false;
                 }
-                else {
-                    currScene = 10;
-                }
-                RebuildPipeline();
+                
                 
                 if (!debounce) {
                     if (glfwGetKey(window, GLFW_KEY_0) == GLFW_PRESS) { targetX = 0; debounce = true; }
@@ -938,6 +983,7 @@ protected:
                         inputXSet = true;  // La coordinata X è stata inserita
                         std::cout << "X set to: " << targetX << "\n";
                         currentState = WAITING_ATTACK_Y;
+                        rebuild = true;
                     }
                 }
                 if (glfwGetKey(window, GLFW_KEY_0) == GLFW_RELEASE &&
@@ -956,13 +1002,16 @@ protected:
             }
 
             case WAITING_ATTACK_Y: {
-                if (currPlayer == 0) {
-                    currScene = 9;
+                if (rebuild) {
+                    if (currPlayer == 0) {
+                        currScene = 9;
+                    }
+                    else {
+                        currScene = 11;
+                    }
+                    RebuildPipeline();
+                    rebuild = false;
                 }
-                else {
-                    currScene = 11;
-                }
-                RebuildPipeline();
 
                 if (!debounce) {
                     if (glfwGetKey(window, GLFW_KEY_0) == GLFW_PRESS) { targetY = 0; debounce = true; }
@@ -979,6 +1028,7 @@ protected:
                         inputYSet = true;  // La coordinata Y è stata inserita
                         std::cout << "Y set to: " << targetY << "\n";
                         currentState = PROCESSING_ATTACK_INPUT;
+                        rebuild = true;
                     }
                 }
                 if (glfwGetKey(window, GLFW_KEY_0) == GLFW_RELEASE &&
