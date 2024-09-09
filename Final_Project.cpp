@@ -5,6 +5,7 @@
 
 #define NPLANE 2
 
+// The text to be displayed
 std::vector<SingleText> outText = {
     {2, {"Player 0.", "Select X_position of boat 0 [0-8]","",""}, 0, 0},
     {2, {"Player 0.", "Select Y_position of boat 0 [0-8]","",""}, 0, 0},
@@ -22,14 +23,7 @@ std::vector<SingleText> outText = {
     {1, {"", "", "", ""}, 0, 0}
 };
 
-// The uniform buffer object used in this example
-struct GlobalUniformBufferObject {
-    glm::vec4 lightDir[3];
-    glm::vec4 lightPos;
-    glm::vec4 lightColor[3];
-    glm::vec4 eyePos;
-};
-
+// The game states
 enum GameState {
     WAITING_BOAT_X,
     WAITING_BOAT_Y,
@@ -41,18 +35,29 @@ enum GameState {
     ANIMATING_EXPLOSION,
 };
 
+// The lights for the plane
+struct GlobalUniformBufferObject {
+    glm::vec4 lightDir[3];
+    glm::vec4 lightPos;
+    glm::vec4 lightColor[3];
+    glm::vec4 eyePos;
+};
+
+// The uniforms for some objects (battleships, missile, sphere)
 struct UniformBufferObject {
     glm::mat4 mvpMat;
     glm::mat4 mMat;
     glm::mat4 nMat;
 };
 
+// The uniforms for the planes
 struct PlaneUniformBufferObject {
     glm::mat4 mvpMat[NPLANE];
     glm::mat4 mMat[NPLANE];
     glm::mat4 nMat[NPLANE];
 };
 
+// The uniforms for the skybox
 struct skyBoxUniformBufferObject {
     glm::mat4 mvpMat;
 };
@@ -71,19 +76,17 @@ struct Vertex {
 // MAIN ! 
 class FinalProject : public BaseProject {
 protected:
-
     // Descriptor Layouts ["classes" of what will be passed to the shaders]
     DescriptorSetLayout DSLGlobal;  // For Global values
 
-    DescriptorSetLayout DSLskyBox;  // For skyBox
-    DescriptorSetLayout DSLPlane;   // For the plane
-    DescriptorSetLayout DSLVerticalPlane;  // For the vertical plane
-    DescriptorSetLayout DSLBattleship;  // For the battleship
+    DescriptorSetLayout DSLskyBox;  
+    DescriptorSetLayout DSLPlane;   
+    DescriptorSetLayout DSLVerticalPlane;  
+    DescriptorSetLayout DSLBattleship;  
 
     // Vertex formats
     VertexDescriptor VDskyBox;
-    VertexDescriptor VDPlane;
-    VertexDescriptor VDBattleship;
+    VertexDescriptor VDClassic;
 
     // Pipelines [Shader couples]
     Pipeline PskyBox;
@@ -107,8 +110,8 @@ protected:
     Texture TlargePlane;
     DescriptorSet DSPlane;
 
-    Model MverticalPlane;  // Modello per il piano verticale
-    Texture TverticalPlane;  // Texture per il piano verticale
+    Model MverticalPlane;  
+    Texture TverticalPlane;  
     DescriptorSet DSVerticalPlane;
 
     Model Mb0p0;
@@ -132,7 +135,7 @@ protected:
     Texture TExplosionSphere;
     DescriptorSet DSExplosionSphere;
 
-
+    // Uniform Buffers di oggetti statici (vertical plane, plane, luci dentro gubo)
     GlobalUniformBufferObject gubo;
     PlaneUniformBufferObject pubo;
     PlaneUniformBufferObject Vpubo;
@@ -188,6 +191,7 @@ protected:
     float y;
     float z;
     glm::vec3 velocity;
+
     //Explosion variables
     glm::vec3 explosionCenter = glm::vec3(0.0f, -100.0f, 0.0f);
     float explosionRadius = 0.0f;
@@ -196,7 +200,7 @@ protected:
     float explosionDuration = 3.0f;
     bool isExplosionVisible = false;
 
-    // Creiamo una matrice S x T di glm::mat4
+    // Due matrici per "mappare" le scacchiere dei Plane orizzontali
     glm::mat4 matrix[9][9];
     glm::mat4 matrixB[9][9];
 
@@ -253,7 +257,7 @@ protected:
               {0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(skyBoxVertex, pos),
                      sizeof(glm::vec3), POSITION}
             });
-        VDPlane.init(this, {
+        VDClassic.init(this, {
                     {0, sizeof(Vertex), VK_VERTEX_INPUT_RATE_VERTEX}
             }, {
                 {0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, pos),
@@ -263,48 +267,39 @@ protected:
                 {0, 2, VK_FORMAT_R32G32_SFLOAT, offsetof(Vertex, UV),
                     sizeof(glm::vec2), UV}
             });
-        VDBattleship.init(this, {
-                    {0, sizeof(Vertex), VK_VERTEX_INPUT_RATE_VERTEX}
-            }, {
-                {0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, pos),
-                    sizeof(glm::vec3), POSITION},
-                {0, 1, VK_FORMAT_R32G32_SFLOAT, offsetof(Vertex, UV),
-                    sizeof(glm::vec2), UV},
-                {0, 2, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, norm),
-                    sizeof(glm::vec3), NORMAL}
-            });
+        
 
         // Pipelines [Shader couples]
         PskyBox.init(this, &VDskyBox, "shaders/SkyBoxVert.spv", "shaders/SkyBoxFrag.spv", { &DSLskyBox });
         PskyBox.setAdvancedFeatures(VK_COMPARE_OP_LESS_OR_EQUAL, VK_POLYGON_MODE_FILL,
             VK_CULL_MODE_BACK_BIT, false);
 
-        PPlane.init(this, &VDPlane, "shaders/PlaneVert.spv", "shaders/PlaneFrag.spv", { &DSLGlobal, &DSLPlane });
+        PPlane.init(this, &VDClassic, "shaders/PlaneVert.spv", "shaders/PlaneFrag.spv", { &DSLGlobal, &DSLPlane });
         PPlane.setAdvancedFeatures(VK_COMPARE_OP_LESS_OR_EQUAL, VK_POLYGON_MODE_FILL,
             VK_CULL_MODE_BACK_BIT, false);
 
-        PVerticalPlane.init(this, &VDPlane, "shaders/PlaneVert.spv", "shaders/PlaneFrag.spv", {&DSLGlobal, &DSLVerticalPlane });
+        PVerticalPlane.init(this, &VDClassic, "shaders/PlaneVert.spv", "shaders/PlaneFrag.spv", {&DSLGlobal, &DSLVerticalPlane });
         PVerticalPlane.setAdvancedFeatures(VK_COMPARE_OP_LESS_OR_EQUAL, VK_POLYGON_MODE_FILL,
             VK_CULL_MODE_BACK_BIT, false);
 
-        PBattleship.init(this, &VDBattleship, "shaders/BattleshipVert.spv", "shaders/BattleshipFrag.spv", { &DSLBattleship });
+        PBattleship.init(this, &VDClassic, "shaders/BattleshipVert.spv", "shaders/BattleshipFrag.spv", { &DSLBattleship });
         PBattleship.setAdvancedFeatures(VK_COMPARE_OP_LESS_OR_EQUAL, VK_POLYGON_MODE_FILL,
             VK_CULL_MODE_BACK_BIT, false);
 
-        PExplosionSphere.init(this, &VDBattleship, "shaders/BattleshipVert.spv", "shaders/BattleshipFrag.spv", { &DSLBattleship });
+        PExplosionSphere.init(this, &VDClassic, "shaders/BattleshipVert.spv", "shaders/BattleshipFrag.spv", { &DSLBattleship });
         PExplosionSphere.setAdvancedFeatures(VK_COMPARE_OP_LESS_OR_EQUAL, VK_POLYGON_MODE_FILL,
             VK_CULL_MODE_BACK_BIT, false);
 
         // Create models
         MskyBox.init(this, &VDskyBox, "models/SkyBoxCube.obj", OBJ);
-        MlargePlane.init(this, &VDPlane, "models/Water.obj", OBJ);
-        Mb0p0.init(this, &VDBattleship, "models/Warships/Battleship.obj", OBJ);
-        Mb1p0.init(this, &VDBattleship, "models/Warships/Battleship.obj", OBJ);
-        Mb0p1.init(this, &VDBattleship, "models/Warships/Battleship.obj", OBJ);
-        Mb1p1.init(this, &VDBattleship, "models/Warships/Battleship.obj", OBJ);
-        Mmissile.init(this, &VDBattleship, "models/Missile/missile3.obj", OBJ);
-        MverticalPlane.init(this, &VDPlane, "models/VerticalPlane.obj", OBJ);  // Inizializza il modello del piano verticale
-        MExplosionSphere.init(this, &VDBattleship, "models/Sphere.obj", OBJ);
+        MlargePlane.init(this, &VDClassic, "models/Water.obj", OBJ);
+        Mb0p0.init(this, &VDClassic, "models/Warships/Battleship.obj", OBJ);
+        Mb1p0.init(this, &VDClassic, "models/Warships/Battleship.obj", OBJ);
+        Mb0p1.init(this, &VDClassic, "models/Warships/Battleship.obj", OBJ);
+        Mb1p1.init(this, &VDClassic, "models/Warships/Battleship.obj", OBJ);
+        Mmissile.init(this, &VDClassic, "models/Missile/missile3.obj", OBJ);
+        MverticalPlane.init(this, &VDClassic, "models/VerticalPlane.obj", OBJ);  // Inizializza il modello del piano verticale
+        MExplosionSphere.init(this, &VDClassic, "models/Sphere.obj", OBJ);
 
         // Create the textures
         TskyBox.init(this, "textures/cielo.jpg");
@@ -317,9 +312,9 @@ protected:
         // Descriptor pool sizes
         // WARNING!!!!!!!!
         // Must be set before initializing the text and the scene
-        DPSZs.uniformBlocksInPool = 30;
-        DPSZs.texturesInPool = 30;
-        DPSZs.setsInPool = 30;
+        DPSZs.uniformBlocksInPool = 20;
+        DPSZs.texturesInPool = 20;
+        DPSZs.setsInPool = 20;
 
         std::cout << "Initializing text\n";
         txt.init(this, &outText);

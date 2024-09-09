@@ -4,8 +4,8 @@
 // this defines the variable received from the Vertex Shader
 // the locations must match the one of its out variables
 layout(location = 0) in vec3 fragPos;
-layout(location = 1) in vec2 fragUV;
-layout(location = 2) in vec3 fragNormal;
+layout(location = 2) in vec2 fragUV;
+layout(location = 1) in vec3 fragNormal;
 
 // This defines the color computed by this shader. Generally is always location 0.
 layout(location = 0) out vec4 outColor;
