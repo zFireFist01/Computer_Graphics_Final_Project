@@ -81,7 +81,6 @@ protected:
 
     DescriptorSetLayout DSLskyBox;  
     DescriptorSetLayout DSLPlane;   
-    DescriptorSetLayout DSLVerticalPlane;  
     DescriptorSetLayout DSLBattleship;  
 
     // Vertex formats
@@ -91,7 +90,6 @@ protected:
     // Pipelines [Shader couples]
     Pipeline PskyBox;
     Pipeline PPlane;
-    Pipeline PVerticalPlane;
     Pipeline PBattleship;
     Pipeline PExplosionSphere;
 
@@ -239,11 +237,6 @@ protected:
                     {1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 0, 1},
                     {2, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS, 1, 1}
             });
-        DSLVerticalPlane.init(this, {
-                    {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, sizeof(PlaneUniformBufferObject), 1},
-                    {1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 0, 1},
-                    {2, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS, 1, 1}
-            });
         DSLBattleship.init(this, {
                     {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, sizeof(UniformBufferObject), 1},
                     {1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 0, 1},
@@ -278,9 +271,6 @@ protected:
         PPlane.setAdvancedFeatures(VK_COMPARE_OP_LESS_OR_EQUAL, VK_POLYGON_MODE_FILL,
             VK_CULL_MODE_BACK_BIT, false);
 
-        PVerticalPlane.init(this, &VDClassic, "shaders/PlaneVert.spv", "shaders/PlaneFrag.spv", {&DSLGlobal, &DSLVerticalPlane });
-        PVerticalPlane.setAdvancedFeatures(VK_COMPARE_OP_LESS_OR_EQUAL, VK_POLYGON_MODE_FILL,
-            VK_CULL_MODE_BACK_BIT, false);
 
         PBattleship.init(this, &VDClassic, "shaders/BattleshipVert.spv", "shaders/BattleshipFrag.spv", { &DSLBattleship });
         PBattleship.setAdvancedFeatures(VK_COMPARE_OP_LESS_OR_EQUAL, VK_POLYGON_MODE_FILL,
@@ -347,7 +337,6 @@ protected:
         // This creates a new pipeline (with the current surface), using its shaders
         PskyBox.create();
         PPlane.create();
-        PVerticalPlane.create();
         PBattleship.create();
         PExplosionSphere.create();
 
@@ -359,7 +348,7 @@ protected:
         DSb0p1.init(this, &DSLBattleship, { &Tbattleship });
         DSb1p1.init(this, &DSLBattleship, { &Tbattleship });
         DSmissile.init(this, &DSLBattleship, { &Tmissile });
-        DSVerticalPlane.init(this, &DSLVerticalPlane, { &TverticalPlane });  // Inizializza il descriptor set per il piano verticale con la sua texture
+        DSVerticalPlane.init(this, &DSLPlane, { &TverticalPlane });  // Inizializza il descriptor set per il piano verticale con la sua texture
         DSExplosionSphere.init(this, &DSLBattleship, { &TExplosionSphere });
 
         DSGlobal.init(this, &DSLGlobal, {});
@@ -373,7 +362,6 @@ protected:
         // Cleanup pipelines
         PskyBox.cleanup();
         PPlane.cleanup();
-        PVerticalPlane.cleanup();
         PBattleship.cleanup();
         PExplosionSphere.cleanup();
 
@@ -421,13 +409,11 @@ protected:
         DSLGlobal.cleanup();
         DSLskyBox.cleanup();
         DSLPlane.cleanup();
-        DSLVerticalPlane.cleanup();
         DSLBattleship.cleanup();
 
         // Destroies the pipelines
         PskyBox.destroy();
         PPlane.destroy();
-        PVerticalPlane.destroy();
         PBattleship.destroy();
         PExplosionSphere.destroy();
 
@@ -452,6 +438,11 @@ protected:
         // Draw the plane
         vkCmdDrawIndexed(commandBuffer,
             static_cast<uint32_t>(MlargePlane.indices.size()), NPLANE, 0, 0, 0);
+
+        // Vertical plane
+        MverticalPlane.bind(commandBuffer);
+        DSVerticalPlane.bind(commandBuffer, PPlane, 1, currentImage);
+        vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(MverticalPlane.indices.size()), NPLANE, 0, 0, 0);
 
         // Bind the pipeline for the battleship 
         PBattleship.bind(commandBuffer);
@@ -486,13 +477,6 @@ protected:
         Mmissile.bind(commandBuffer);
         DSmissile.bind(commandBuffer, PBattleship, 0, currentImage);
         vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(Mmissile.indices.size()), 1, 0, 0, 0);
-
-        // Vertical plane
-        PVerticalPlane.bind(commandBuffer);
-        MverticalPlane.bind(commandBuffer);
-        DSGlobal.bind(commandBuffer, PVerticalPlane, 0, currentImage);
-        DSVerticalPlane.bind(commandBuffer, PVerticalPlane, 1, currentImage);
-        vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(MverticalPlane.indices.size()), NPLANE, 0, 0, 0);
         
         PExplosionSphere.bind(commandBuffer);
         MExplosionSphere.bind(commandBuffer);
