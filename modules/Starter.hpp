@@ -13,6 +13,7 @@
 #include <array>
 #include <cmath>
 #include <math.h>
+#include <chrono>
 
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEFAULT_ALIGNED_GENTYPES
@@ -61,6 +62,12 @@
 
 const int MAX_FRAMES_IN_FLIGHT = 2;
 
+// Variabili globali per il calcolo degli FPS
+std::chrono::time_point<std::chrono::high_resolution_clock> start, end;
+float frameDuration = 0.0f;
+int frameCount = 0;
+float fps = 0.0f;
+
 const std::vector<const char*> validationLayers = {
 	"VK_LAYER_KHRONOS_validation"
 };
@@ -84,6 +91,26 @@ struct SwapChainSupportDetails {
 	std::vector<VkSurfaceFormatKHR> formats;
 	std::vector<VkPresentModeKHR> presentModes;
 };
+
+void startFPSCounter() {
+    start = std::chrono::high_resolution_clock::now();
+}
+
+void endFPSCounter() {
+    // Ottieni l'ora corrente
+    end = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<float> duration = end - start;
+    frameDuration += duration.count();
+    frameCount++;
+
+    // Aggiorna e stampa gli FPS ogni secondo
+    if (frameDuration >= 1.0f) {
+        fps = frameCount / frameDuration;
+        std::cout << "FPS: " << fps << std::endl;
+        frameDuration = 0.0f;
+        frameCount = 0;
+    }
+}
 
 
 VkResult CreateDebugUtilsMessengerEXT(VkInstance instance,
@@ -1614,8 +1641,10 @@ std::cout << "Starting createInstance()\n"  << std::flush;
 	
     void mainLoop() {
         while (!glfwWindowShouldClose(window)){
+			startFPSCounter();
             glfwPollEvents();
             drawFrame();
+			endFPSCounter();
         }
         
         vkDeviceWaitIdle(device);
