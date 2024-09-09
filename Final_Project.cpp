@@ -45,7 +45,6 @@ struct UniformBufferObject {
     glm::mat4 mvpMat;
     glm::mat4 mMat;
     glm::mat4 nMat;
-    glm::vec4 color;
 };
 
 struct PlaneUniformBufferObject {
@@ -887,7 +886,6 @@ protected:
                 ubo.mMat = matrix[B0P0_x][B0P0_y];
                 ubo.mvpMat = ViewPrj * ubo.mMat;
                 ubo.nMat = glm::inverse(glm::transpose(ubo.mMat));
-                ubo.color = glm::vec4(1.0f);
 
                 DSb0p0.map(currentImage, &ubo, 0);
 
@@ -895,7 +893,6 @@ protected:
                 ubo.mMat = matrix[B1P0_x][B1P0_y];
                 ubo.mvpMat = ViewPrj * ubo.mMat;
                 ubo.nMat = glm::inverse(glm::transpose(ubo.mMat));
-                ubo.color = glm::vec4(1.0f);
 
                 DSb1p0.map(currentImage, &ubo, 0);
 
@@ -903,14 +900,12 @@ protected:
                 ubo.mMat = matrixB[B0P1_x][B0P1_y];
                 ubo.mvpMat = ViewPrj * ubo.mMat;
                 ubo.nMat = glm::inverse(glm::transpose(ubo.mMat));
-                ubo.color = glm::vec4(1.0f);
 
                 DSb0p1.map(currentImage, &ubo, 0);
 
                 ubo.mMat = matrixB[B1P1_x][B1P1_y];
                 ubo.mvpMat = ViewPrj * ubo.mMat;
                 ubo.nMat = glm::inverse(glm::transpose(ubo.mMat));
-                ubo.color = glm::vec4(1.0f);
 
                 DSb1p1.map(currentImage, &ubo, 0);
 
@@ -1188,7 +1183,6 @@ protected:
                 uboExplosion.mMat = modelMatrix;
                 uboExplosion.mvpMat = ViewPrj * uboExplosion.mMat;
                 uboExplosion.nMat = glm::inverse(glm::transpose(uboExplosion.mMat));
-                uboExplosion.color = glm::vec4(1.0f, 0.5f, 0.0f, 1.0f); // Colore arancione
 
                 DSExplosionSphere.map(currentImage, &uboExplosion, 0);
             }
@@ -1215,7 +1209,6 @@ protected:
 
             ubo.mvpMat = ViewPrj * ubo.mMat;
             ubo.nMat = glm::inverse(glm::transpose(ubo.mMat));
-            ubo.color = glm::vec4(1.0f);
 
             DSb0p0.map(currentImage, &ubo, 0);
 
@@ -1229,7 +1222,6 @@ protected:
 
             ubo.mvpMat = ViewPrj * ubo.mMat;
             ubo.nMat = glm::inverse(glm::transpose(ubo.mMat));
-            ubo.color = glm::vec4(1.0f);
 
             DSb1p0.map(currentImage, &ubo, 0);
 
@@ -1243,7 +1235,6 @@ protected:
 
             ubo.mvpMat = ViewPrj * ubo.mMat;
             ubo.nMat = glm::inverse(glm::transpose(ubo.mMat));
-            ubo.color = glm::vec4(1.0f);
 
             DSb0p1.map(currentImage, &ubo, 0);
 
@@ -1255,7 +1246,6 @@ protected:
             }
             ubo.mvpMat = ViewPrj * ubo.mMat;
             ubo.nMat = glm::inverse(glm::transpose(ubo.mMat));
-            ubo.color = glm::vec4(1.0f);
 
             DSb1p1.map(currentImage, &ubo, 0);
         }
@@ -1263,7 +1253,6 @@ protected:
             ubo.mMat = matrix[1][3];
             ubo.mvpMat = ViewPrj * ubo.mMat;
             ubo.nMat = glm::inverse(glm::transpose(ubo.mMat));
-            ubo.color = glm::vec4(1.0f);
 
             DSb0p0.map(currentImage, &ubo, 0);
 
@@ -1271,7 +1260,6 @@ protected:
             ubo.mMat = matrix[8][6];
             ubo.mvpMat = ViewPrj * ubo.mMat;
             ubo.nMat = glm::inverse(glm::transpose(ubo.mMat));
-            ubo.color = glm::vec4(1.0f);
 
             DSb1p0.map(currentImage, &ubo, 0);
 
@@ -1279,14 +1267,12 @@ protected:
             ubo.mMat = matrixB[0][2];
             ubo.mvpMat = ViewPrj * ubo.mMat;
             ubo.nMat = glm::inverse(glm::transpose(ubo.mMat));
-            ubo.color = glm::vec4(1.0f);
 
             DSb0p1.map(currentImage, &ubo, 0);
 
             ubo.mMat = matrixB[7][5];
             ubo.mvpMat = ViewPrj * ubo.mMat;
             ubo.nMat = glm::inverse(glm::transpose(ubo.mMat));
-            ubo.color = glm::vec4(1.0f);
 
             DSb1p1.map(currentImage, &ubo, 0);
         }

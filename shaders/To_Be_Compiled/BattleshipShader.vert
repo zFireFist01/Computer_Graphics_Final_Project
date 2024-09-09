@@ -17,7 +17,6 @@ layout(set = 0, binding = 0) uniform UniformBufferObject {
     mat4 mvpMat;
     mat4 mMat;
     mat4 nMat;
-    vec4 color;
 } ubo;
 
 void main() {
