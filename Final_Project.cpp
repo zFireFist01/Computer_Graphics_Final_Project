@@ -290,7 +290,7 @@ protected:
         Mb1p0.init(this, &VDClassic, "models/Warships/Battleship.obj", OBJ);
         Mb0p1.init(this, &VDClassic, "models/Warships/Battleship.obj", OBJ);
         Mb1p1.init(this, &VDClassic, "models/Warships/Battleship.obj", OBJ);
-        Mmissile.init(this, &VDClassic, "models/Missile/missile3.obj", OBJ);
+        Mmissile.init(this, &VDClassic, "models/Missile/missile4.obj", OBJ);
         MverticalPlane.init(this, &VDClassic, "models/VerticalPlane.obj", OBJ);  // Inizializza il modello del piano verticale
         MExplosionSphere.init(this, &VDClassic, "models/Sphere.obj", OBJ);
 
