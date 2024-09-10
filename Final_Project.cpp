@@ -327,7 +327,8 @@ protected:
         for (int i = 0; i < 9; ++i) {
             for (int j = 0; j < 9; ++j) {
                 matrix[i][j] = glm::translate(glm::mat4(1.0f), glm::vec3(22.0f * (j - 4), 0.0f, 22.0f * (i - 4)));
-                matrixB[i][j] = glm::translate(glm::rotate(matrix[i][j], glm::radians(180.0f), glm::vec3(0.0f, 1.0f, 0.0f)), glm::vec3(0.0f, 0.0f, 193.0f));
+                matrixB[8-i][8-j] = glm::translate(glm::rotate(matrix[i][j], glm::radians(180.0f), glm::vec3(0.0f, 1.0f, 0.0f)),glm::vec3(0.0f, 0.0f, 193.0f)
+                );
             }
         }
     }
@@ -488,7 +489,6 @@ protected:
 
         staticUniformBuffer(currentImage);
     }
-
 
     void staticUniformBuffer(uint32_t currentImage) {
         //Point Light
@@ -1158,7 +1158,7 @@ protected:
                 targetY = -1;
             }
             else {
-                CamPos = missilePos + glm::vec3(0.0f, 8.0f, 0.0f);
+                CamPos = missilePos + glm::vec3(0.0f, 9.0f, 0.0f) - velocity * 5.0f;
                 forward = missileEndPos;// glm::normalize(velocity);
                 ViewMatrix = glm::lookAt(CamPos, forward, up);
 
