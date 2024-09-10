@@ -710,13 +710,13 @@ std::cout << "Starting createInstance()\n"  << std::flush;
 			if(checkIfItHasDeviceExtension(device, "VK_KHR_portability_subset")) {
 				deviceExtensions.push_back("VK_KHR_portability_subset");
 			}
-						
+			VkPhysicalDeviceProperties deviceProperties;
+			vkGetPhysicalDeviceProperties(device, &deviceProperties);			
 			bool suitable = isDeviceSuitable(device, devRep);
-			if (suitable) {
+			if (suitable && (physicalDevice == nullptr || deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU)) {
 				physicalDevice = device;
 				msaaSamples = getMaxUsableSampleCount();
 				std::cout << "\n\nMaximum samples for anti-aliasing: " << msaaSamples << "\n\n\n";
-				break;
 			} else {
 				std::cout << "Device " << device << " is not suitable\n";
 				devRep.print();

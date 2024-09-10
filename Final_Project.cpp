@@ -90,7 +90,7 @@ protected:
     // Pipelines [Shader couples]
     Pipeline PskyBox;
     Pipeline PPlane;
-    Pipeline PBattleship;
+    Pipeline PMetallic;
     Pipeline PExplosionSphere;
 
     // Scenes and texts
@@ -272,8 +272,8 @@ protected:
             VK_CULL_MODE_BACK_BIT, false);
 
 
-        PBattleship.init(this, &VDClassic, "shaders/BattleshipVert.spv", "shaders/BattleshipFrag.spv", { &DSLGlobal, &DSLBattleship });
-        PBattleship.setAdvancedFeatures(VK_COMPARE_OP_LESS_OR_EQUAL, VK_POLYGON_MODE_FILL,
+        PMetallic.init(this, &VDClassic, "shaders/BattleshipVert.spv", "shaders/BattleshipFrag.spv", { &DSLGlobal, &DSLBattleship });
+        PMetallic.setAdvancedFeatures(VK_COMPARE_OP_LESS_OR_EQUAL, VK_POLYGON_MODE_FILL,
             VK_CULL_MODE_BACK_BIT, false);
 
         PExplosionSphere.init(this, &VDClassic, "shaders/ExplosionSphereVert.spv", "shaders/ExplosionSphereFrag.spv", { &DSLBattleship });
@@ -337,7 +337,7 @@ protected:
         // This creates a new pipeline (with the current surface), using its shaders
         PskyBox.create();
         PPlane.create();
-        PBattleship.create();
+        PMetallic.create();
         PExplosionSphere.create();
 
         // Here you define the data set
@@ -362,7 +362,7 @@ protected:
         // Cleanup pipelines
         PskyBox.cleanup();
         PPlane.cleanup();
-        PBattleship.cleanup();
+        PMetallic.cleanup();
         PExplosionSphere.cleanup();
 
         DSskyBox.cleanup();
@@ -414,7 +414,7 @@ protected:
         // Destroies the pipelines
         PskyBox.destroy();
         PPlane.destroy();
-        PBattleship.destroy();
+        PMetallic.destroy();
         PExplosionSphere.destroy();
 
         txt.localCleanup();
@@ -445,38 +445,38 @@ protected:
         vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(MverticalPlane.indices.size()), NPLANE, 0, 0, 0);
 
         // Bind the pipeline for the battleship 
-        PBattleship.bind(commandBuffer);
+        PMetallic.bind(commandBuffer);
         Mb0p0.bind(commandBuffer);
-        DSGlobal.bind(commandBuffer, PBattleship, 0, currentImage);
-        DSb0p0.bind(commandBuffer, PBattleship, 1, currentImage);
+        DSGlobal.bind(commandBuffer, PMetallic, 0, currentImage);
+        DSb0p0.bind(commandBuffer, PMetallic, 1, currentImage);
         // Draw the battleship
         vkCmdDrawIndexed(commandBuffer,
             static_cast<uint32_t>(Mb0p0.indices.size()), 1, 0, 0, 0);
 
         // Bind the pipeline for the Smallbattleship
         Mb1p0.bind(commandBuffer);
-        DSb1p0.bind(commandBuffer, PBattleship, 1, currentImage);
+        DSb1p0.bind(commandBuffer, PMetallic, 1, currentImage);
         // Draw the battleship
         vkCmdDrawIndexed(commandBuffer,
             static_cast<uint32_t>(Mb1p0.indices.size()), 1, 0, 0, 0);
 
         // Bind the pipeline for the Smallbattleship
         Mb0p1.bind(commandBuffer);
-        DSb0p1.bind(commandBuffer, PBattleship, 1, currentImage);
+        DSb0p1.bind(commandBuffer, PMetallic, 1, currentImage);
         // Draw the battleship
         vkCmdDrawIndexed(commandBuffer,
             static_cast<uint32_t>(Mb0p1.indices.size()), 1, 0, 0, 0);
 
         // Bind the pipeline for the Smallbattleship
         Mb1p1.bind(commandBuffer);
-        DSb1p1.bind(commandBuffer, PBattleship, 1, currentImage);
+        DSb1p1.bind(commandBuffer, PMetallic, 1, currentImage);
         // Draw the battleship
         vkCmdDrawIndexed(commandBuffer,
             static_cast<uint32_t>(Mb1p1.indices.size()), 1, 0, 0, 0);
 
         //missile
         Mmissile.bind(commandBuffer);
-        DSmissile.bind(commandBuffer, PBattleship, 1, currentImage);
+        DSmissile.bind(commandBuffer, PMetallic, 1, currentImage);
         vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(Mmissile.indices.size()), 1, 0, 0, 0);
         
         PExplosionSphere.bind(commandBuffer);
