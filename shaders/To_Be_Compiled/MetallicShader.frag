@@ -24,13 +24,11 @@ layout(set = 1, binding = 1) uniform sampler2D tex;
 
 
 //For PointLight regulations
-	float constant = 1.0;
-	float linear = 0.0001;
-	float quadratic = 0.032;
+float quadratic = 0.01;
 // PointLight
 
 //For Ambient Light
-float ambientIntensity = 0.3f;
+float ambientIntensity = 0.8f;
 
 //For Cook-Torrance
 float roughness = 0.1; 
@@ -54,9 +52,9 @@ vec3 CookTorrance(vec3 lightColor, vec3 Norm, vec3 EyeDir, vec3 LD) {
 
     // Cook-Torrance
     vec3 halfVec = normalize(EyeDir + LD);
-    float NdotH = max(dot(Norm, halfVec), 0.0);
+    //float NdotH = max(dot(Norm, halfVec), 0.0);
     float NdotV = max(dot(Norm, EyeDir), 0.0);
-    float NdotL = max(dot(Norm, LD), 0.0);
+    //float NdotL = max(dot(Norm, LD), 0.0);
     float VdotH = max(dot(EyeDir, halfVec), 0.0);
 
     float D = (roughness * roughness) / (PI * pow( pow( dot(Norm, halfVec), 2) * (roughness * roughness - 1) + 1, 2));
@@ -94,5 +92,4 @@ void main() {
     vec3 Ambient = vec3(1, 1, 1) * ambientIntensity;
 
     outColor = Albedo * vec4((RendEqSol + Ambient) * vec3(1, 1, 1), 1.0);
-    //outColor = vec4(Albedo * (Ambient + RendEqSol) * vec3(2.0, 2.0, 2.0), 1.0f);  // Boost brightness
 }

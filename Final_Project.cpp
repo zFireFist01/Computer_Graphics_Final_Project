@@ -81,7 +81,7 @@ protected:
 
     DescriptorSetLayout DSLskyBox;  
     DescriptorSetLayout DSLPlane;   
-    DescriptorSetLayout DSLBattleship;  
+    DescriptorSetLayout DSLMetallic;  
 
     // Vertex formats
     VertexDescriptor VDskyBox;
@@ -90,6 +90,7 @@ protected:
     // Pipelines [Shader couples]
     Pipeline PskyBox;
     Pipeline PPlane;
+    Pipeline PVerticalPlane;
     Pipeline PMetallic;
     Pipeline PExplosionSphere;
 
@@ -237,7 +238,7 @@ protected:
                     {1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 0, 1},
                     {2, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS, 1, 1}
             });
-        DSLBattleship.init(this, {
+        DSLMetallic.init(this, {
                     {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, sizeof(UniformBufferObject), 1},
                     {1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 0, 1},
                     {2, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS, 1, 1}
@@ -271,12 +272,15 @@ protected:
         PPlane.setAdvancedFeatures(VK_COMPARE_OP_LESS_OR_EQUAL, VK_POLYGON_MODE_FILL,
             VK_CULL_MODE_BACK_BIT, false);
 
+        PVerticalPlane.init(this, &VDClassic, "shaders/PlaneVert.spv", "shaders/VerticalPlaneFrag.spv", { &DSLGlobal, &DSLPlane });
+        PVerticalPlane.setAdvancedFeatures(VK_COMPARE_OP_LESS_OR_EQUAL, VK_POLYGON_MODE_FILL,
+            VK_CULL_MODE_BACK_BIT, false);
 
-        PMetallic.init(this, &VDClassic, "shaders/BattleshipVert.spv", "shaders/BattleshipFrag.spv", { &DSLGlobal, &DSLBattleship });
+        PMetallic.init(this, &VDClassic, "shaders/MetallicVert.spv", "shaders/MetallicFrag.spv", { &DSLGlobal, &DSLMetallic });
         PMetallic.setAdvancedFeatures(VK_COMPARE_OP_LESS_OR_EQUAL, VK_POLYGON_MODE_FILL,
             VK_CULL_MODE_BACK_BIT, false);
 
-        PExplosionSphere.init(this, &VDClassic, "shaders/ExplosionSphereVert.spv", "shaders/ExplosionSphereFrag.spv", { &DSLBattleship });
+        PExplosionSphere.init(this, &VDClassic, "shaders/ExplosionSphereVert.spv", "shaders/ExplosionSphereFrag.spv", { &DSLMetallic });
         PExplosionSphere.setAdvancedFeatures(VK_COMPARE_OP_LESS_OR_EQUAL, VK_POLYGON_MODE_FILL,
             VK_CULL_MODE_BACK_BIT, false);
 
@@ -337,19 +341,20 @@ protected:
         // This creates a new pipeline (with the current surface), using its shaders
         PskyBox.create();
         PPlane.create();
+        PVerticalPlane.create();
         PMetallic.create();
         PExplosionSphere.create();
 
         // Here you define the data set
         DSskyBox.init(this, &DSLskyBox, { &TskyBox });
         DSPlane.init(this, &DSLPlane, { &TlargePlane });
-        DSb0p0.init(this, &DSLBattleship, { &Tbattleship });
-        DSb1p0.init(this, &DSLBattleship, { &Tbattleship });
-        DSb0p1.init(this, &DSLBattleship, { &Tbattleship });
-        DSb1p1.init(this, &DSLBattleship, { &Tbattleship });
-        DSmissile.init(this, &DSLBattleship, { &Tmissile });
+        DSb0p0.init(this, &DSLMetallic, { &Tbattleship });
+        DSb1p0.init(this, &DSLMetallic, { &Tbattleship });
+        DSb0p1.init(this, &DSLMetallic, { &Tbattleship });
+        DSb1p1.init(this, &DSLMetallic, { &Tbattleship });
+        DSmissile.init(this, &DSLMetallic, { &Tmissile });
         DSVerticalPlane.init(this, &DSLPlane, { &TverticalPlane });  // Inizializza il descriptor set per il piano verticale con la sua texture
-        DSExplosionSphere.init(this, &DSLBattleship, { &TExplosionSphere });
+        DSExplosionSphere.init(this, &DSLMetallic, { &TExplosionSphere });
 
         DSGlobal.init(this, &DSLGlobal, {});
 
@@ -362,6 +367,7 @@ protected:
         // Cleanup pipelines
         PskyBox.cleanup();
         PPlane.cleanup();
+        PVerticalPlane.cleanup();
         PMetallic.cleanup();
         PExplosionSphere.cleanup();
 
@@ -409,11 +415,12 @@ protected:
         DSLGlobal.cleanup();
         DSLskyBox.cleanup();
         DSLPlane.cleanup();
-        DSLBattleship.cleanup();
+        DSLMetallic.cleanup();
 
         // Destroies the pipelines
         PskyBox.destroy();
         PPlane.destroy();
+        PVerticalPlane.destroy();
         PMetallic.destroy();
         PExplosionSphere.destroy();
 
@@ -440,8 +447,10 @@ protected:
             static_cast<uint32_t>(MlargePlane.indices.size()), NPLANE, 0, 0, 0);
 
         // Vertical plane
+        PVerticalPlane.bind(commandBuffer);
         MverticalPlane.bind(commandBuffer);
-        DSVerticalPlane.bind(commandBuffer, PPlane, 1, currentImage);
+        DSGlobal.bind(commandBuffer, PVerticalPlane, 0, currentImage);
+        DSVerticalPlane.bind(commandBuffer, PVerticalPlane, 1, currentImage);
         vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(MverticalPlane.indices.size()), NPLANE, 0, 0, 0);
 
         // Bind the pipeline for the battleship 

@@ -20,12 +20,6 @@ layout(set = 0, binding = 0) uniform GlobalUniformBufferObject {
 layout(set = 1, binding = 1) uniform sampler2D tex;
 
 
-//For PointLight regulations
-float constant = 1.0;
-float linear = 0.0001;
-float quadratic = 0.0001;
-// PointLight
-
 
 vec3 BRDF(vec3 Albedo, vec3 Norm, vec3 EyeDir, vec3 LD){
     vec3 Diffuse;
@@ -33,11 +27,12 @@ vec3 BRDF(vec3 Albedo, vec3 Norm, vec3 EyeDir, vec3 LD){
     Diffuse = Albedo * max(dot(Norm, LD), 0.0f);
     Specular = vec3(pow(max(dot(EyeDir, -reflect(LD, Norm)), 0.0f), 160.0f));
 
-    return Diffuse + 0.6 * Specular;
+    return Diffuse + 0.3 * Specular;
 }
 
 
 void main() {
+
     vec3 lightColor[3];
     vec3 lightDir[3];
 
@@ -47,16 +42,18 @@ void main() {
 
     vec3 RendEqSol = vec3(0.0f);
 
-    //Point Light
-    lightDir[0] = normalize(gubo.lightDir[0].xyz);
-    float distance = length(gubo.lightPos.xyz - fragPos);
-    
-    // Modifica dell'attenuazione per aumentare il raggio d'azione
-    float attenuation = 1.0 / (constant + linear * distance + quadratic * distance * distance);
 
-    lightColor[0] = gubo.lightColor[0].rgb * attenuation * gubo.lightColor[0].a;
+    //DirectLight 1
+    lightDir[1] = normalize(gubo.lightDir[1].xyz);  
+    lightColor[1] = gubo.lightColor[1].rgb;
+    RendEqSol += BRDF(Albedo, Norm, EyeDir, lightDir[1].xyz) * lightColor[1].xyz;
 
-    RendEqSol += BRDF(Albedo, Norm, EyeDir, lightDir[0]) * lightColor[0].xyz;
+
+    //DirectLight 2
+    lightDir[2] = normalize(gubo.lightDir[2].xyz);  
+    lightColor[2] = gubo.lightColor[2].rgb;
+    RendEqSol += BRDF(Albedo, Norm, EyeDir, lightDir[2].xyz) * lightColor[2].xyz;
+
 
     vec3 Ambient = texture(tex, fragUV).rgb * 0.025f;
 
