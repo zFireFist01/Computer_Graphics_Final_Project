@@ -1,6 +1,8 @@
 #version 450
 #extension GL_ARB_separate_shader_objects : enable
 
+#define PI 3.14159
+
 // this defines the variable received from the Vertex Shader
 // the locations must match the one of its out variables
 layout(location = 0) in vec3 fragPos;
@@ -21,31 +23,59 @@ layout(set = 0, binding = 0) uniform GlobalUniformBufferObject {
 layout(set = 1, binding = 1) uniform sampler2D tex;
 
 
+//For PointLight regulations
+	float constant = 1.0;
+	float linear = 0.0001;
+	float quadratic = 0.032;
+// PointLight
 
-vec3 BRDF(vec3 Albedo, vec3 Norm, vec3 EyeDir, vec3 LD){
+//For Ambient Light
+float ambientIntensity = 0.3f;
+
+//For Cook-Torrance
+float roughness = 0.1; 
+float k = 0.6; 
+float F0 = 0.91; 
+
+float ggx(vec3 n, vec3 v){
+    float dotNV = max(dot(n,v), 0.0);
+    float k = (roughness * roughness) / 2.0;
+    return dotNV / (dotNV * (1.0 - k) + k);
+}
+
+
+// Cook-Torrance
+vec3 CookTorrance(vec3 lightColor, vec3 Norm, vec3 EyeDir, vec3 LD) {
     vec3 Diffuse;
     vec3 Specular;
-    Diffuse = Albedo * max(dot(Norm, LD), 0.0f);
-    Specular = vec3(pow(max(dot(EyeDir, -reflect(LD, Norm)), 0.0f), 160.0f));
 
-    return Diffuse + Specular;
+    // Lambert
+    Diffuse = lightColor * max(dot(Norm, LD), 0.0f);
+
+    // Cook-Torrance
+    vec3 halfVec = normalize(EyeDir + LD);
+    float NdotH = max(dot(Norm, halfVec), 0.0);
+    float NdotV = max(dot(Norm, EyeDir), 0.0);
+    float NdotL = max(dot(Norm, LD), 0.0);
+    float VdotH = max(dot(EyeDir, halfVec), 0.0);
+
+    float D = (roughness * roughness) / (PI * pow( pow( dot(Norm, halfVec), 2) * (roughness * roughness - 1) + 1, 2));
+    float G = ggx(Norm, EyeDir) * ggx(Norm, LD);
+    float F = F0 + (1.0 - F0) * pow(1.0 - VdotH, 5.0);
+
+    Specular = lightColor * D * G * F / (4.0 * NdotV);
+
+    return k*Diffuse + (1-k)*Specular;
 }
 
 
 void main() {
-
-    //For PointLight regulations
-	float constant = 1.0;
-	float linear = 0.0001;
-	float quadratic = 0.0001;
-    // PointLight
-
     vec3 lightColor;
     vec3 lightDir;
 
-    vec3 Norm = normalize(fragNorm);
+    vec3 Norm = fragNorm;
     vec3 EyeDir = normalize(gubo.eyePos.xyz - fragPos);
-    vec3 Albedo = texture(tex, fragUV).rgb;
+    vec4 Albedo = texture(tex, fragUV);
 
     vec3 RendEqSol = vec3(0.0f);
 
@@ -54,17 +84,15 @@ void main() {
     float distance = length(gubo.lightPos.xyz - fragPos);
     
     // Modifica dell'attenuazione per aumentare il raggio d'azione
-    float attenuation = 1.0 / (constant + linear * distance + quadratic * distance * distance);
+    float attenuation = 1.0 / (quadratic * distance * distance);
 
-    lightColor = gubo.lightColor[0].rgb * attenuation * gubo.lightColor[0].a;
+    lightColor = gubo.lightColor[0].rgb * attenuation;
 
-    RendEqSol += BRDF(Albedo, Norm, EyeDir, lightDir) * lightColor.xyz;
+    // Call CookTorrance function in main()
+    RendEqSol += CookTorrance(lightColor, Norm, EyeDir, lightDir);
 
+    vec3 Ambient = vec3(1, 1, 1) * ambientIntensity;
 
-
-    vec3 Ambient = texture(tex, fragUV).rgb * 0.025f;
-
-    RendEqSol += Ambient;
-    
-    outColor = vec4(RendEqSol, 1.0f);
+    outColor = Albedo * vec4((RendEqSol + Ambient) * vec3(1, 1, 1), 1.0);
+    //outColor = vec4(Albedo * (Ambient + RendEqSol) * vec3(2.0, 2.0, 2.0), 1.0f);  // Boost brightness
 }

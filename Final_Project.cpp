@@ -504,9 +504,6 @@ protected:
         gubo.lightDir[2] = glm::vec4(0.0f, 0.0f, 1.0f, 1.0f);
         gubo.lightColor[2] = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
 
-        gubo.eyePos = glm::vec4(100.0f, 120.0f, 200.0f, 1.0f);
-
-
         // Update uniforms for the plane
         pubo.mMat[0] = glm::mat4(1.0f);
         pubo.nMat[0] = glm::inverse(glm::transpose(pubo.mMat[0]));
@@ -569,6 +566,9 @@ protected:
         glm::mat4 Mv = ViewMatrix;
         glm::mat4 ViewPrj = M * Mv;
         glm::mat4 baseTr = glm::mat4(1.0f);
+
+
+        gubo.eyePos = glm::vec4(CamPos, 1.0f);
 
 
         DSGlobal.map(currentImage, &gubo, 0);
