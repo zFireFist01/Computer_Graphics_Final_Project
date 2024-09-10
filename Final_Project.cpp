@@ -259,8 +259,6 @@ protected:
             });
         DSLTiles.init(this, {
                     {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, sizeof(TileUniformBufferObject), 1},
-                    {1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 0, 1},
-                    {2, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS, 1, 1}
             });
 
         // Vertex descriptors
@@ -302,7 +300,7 @@ protected:
         PExplosionSphere.setAdvancedFeatures(VK_COMPARE_OP_LESS_OR_EQUAL, VK_POLYGON_MODE_FILL,
             VK_CULL_MODE_BACK_BIT, false);
 
-        PTiles.init(this, &VDClassic, "shaders/TilesVert.spv", "shaders/VerticalPlaneFrag.spv", { &DSLGlobal, &DSLTiles });
+        PTiles.init(this, &VDClassic, "shaders/TileVert.spv", "shaders/TileFrag.spv", { &DSLGlobal, &DSLTiles });
         PTiles.setAdvancedFeatures(VK_COMPARE_OP_LESS_OR_EQUAL, VK_POLYGON_MODE_FILL,
             VK_CULL_MODE_BACK_BIT, false);
 
@@ -329,9 +327,9 @@ protected:
         // Descriptor pool sizes
         // WARNING!!!!!!!!
         // Must be set before initializing the text and the scene
-        DPSZs.uniformBlocksInPool = 20;
-        DPSZs.texturesInPool = 20;
-        DPSZs.setsInPool = 20;
+        DPSZs.uniformBlocksInPool = 200;
+        DPSZs.texturesInPool = 200;
+        DPSZs.setsInPool = 200;
 
         std::cout << "Initializing text\n";
         txt.init(this, &outText);
@@ -565,7 +563,7 @@ protected:
         Vpubo.nMat[1] = glm::inverse(glm::transpose(Vpubo.mMat[1]));
 
         for (int i = 0; i < NTILE; i++) {
-            tubo.mMat[i] = glm::mat4(1.0f) * glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+            tubo.mMat[i] = glm::translate(glm::mat4(1.0f) * glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f)), glm::vec3(i* 10.0f, 0.0f, 0.0f));
             tubo.nMat[i] = glm::inverse(glm::transpose(tubo.mMat[i]));
         }
     }
@@ -646,6 +644,7 @@ protected:
         for (int i = 0; i < NTILE; i++) {
             tubo.mvpMat[i] = ViewPrj * tubo.mMat[i];
         }
+        DSTile.map(currentImage, &tubo, 0);
 
         UniformBufferObject uboMissile{};
         UniformBufferObject uboExplosion{};
