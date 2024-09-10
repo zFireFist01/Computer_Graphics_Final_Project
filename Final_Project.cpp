@@ -79,10 +79,9 @@ protected:
     // Descriptor Layouts ["classes" of what will be passed to the shaders]
     DescriptorSetLayout DSLGlobal;  // For Global values
 
-    DescriptorSetLayout DSLskyBox;  
-    DescriptorSetLayout DSLPlane;   
+    DescriptorSetLayout DSLskyBox;
+    DescriptorSetLayout DSLPlane;
     DescriptorSetLayout DSLMetallic;  
-
 
     // Vertex formats
     VertexDescriptor VDskyBox;
@@ -262,7 +261,6 @@ protected:
                 {0, 2, VK_FORMAT_R32G32_SFLOAT, offsetof(Vertex, UV),
                     sizeof(glm::vec2), UV}
             });
-
 
         // Pipelines [Shader couples]
         PskyBox.init(this, &VDskyBox, "shaders/SkyBoxVert.spv", "shaders/SkyBoxFrag.spv", { &DSLskyBox });
@@ -914,27 +912,27 @@ protected:
             RebuildPipeline();
             UniformBufferObject ubo{};
             // Update uniforms for the battleship
-            ubo.mMat = matrix[B0P0_x][B0P0_y];
+            ubo.mMat = matrix[B0P0_y][B0P0_x];
             ubo.mvpMat = ViewPrj * ubo.mMat;
             ubo.nMat = glm::inverse(glm::transpose(ubo.mMat));
 
             DSb0p0.map(currentImage, &ubo, 0);
 
             // Update uniforms for the battleship
-            ubo.mMat = matrix[B1P0_x][B1P0_y];
+            ubo.mMat = matrix[B1P0_y][B1P0_x];
             ubo.mvpMat = ViewPrj * ubo.mMat;
             ubo.nMat = glm::inverse(glm::transpose(ubo.mMat));
 
             DSb1p0.map(currentImage, &ubo, 0);
 
             // TODO: mancano le battelship del giocatore 1 e vanno aggiunte mappandole sulla seconda tavola
-            ubo.mMat = matrixB[B0P1_x][B0P1_y];
+            ubo.mMat = matrixB[B0P1_y][B0P1_x];
             ubo.mvpMat = ViewPrj * ubo.mMat;
             ubo.nMat = glm::inverse(glm::transpose(ubo.mMat));
 
             DSb0p1.map(currentImage, &ubo, 0);
 
-            ubo.mMat = matrixB[B1P1_x][B1P1_y];
+            ubo.mMat = matrixB[B1P1_y][B1P1_x];
             ubo.mvpMat = ViewPrj * ubo.mMat;
             ubo.nMat = glm::inverse(glm::transpose(ubo.mMat));
 
@@ -1043,13 +1041,13 @@ protected:
                 missileTime = 0.0f;  // Reset the missile animation time
                 if (currPlayer == 0) {
                     // TODO - settare l'arrivo in base alla matrice che mappa il secondo tabellone  
-                    glm::mat4 targetMatrix = matrixB[targetX][targetY];
+                    glm::mat4 targetMatrix = matrixB[targetY][targetX];
                     glm::vec3 targetPosition = glm::vec3(targetMatrix[3]);
                     missileEndPos = targetPosition;
                 }
                 else {
 
-                    glm::mat4 targetMatrix = matrix[targetX][targetY];
+                    glm::mat4 targetMatrix = matrix[targetY][targetX];
                     glm::vec3 targetPosition = glm::vec3(targetMatrix[3]);
                     missileEndPos = targetPosition;
                 }
@@ -1244,7 +1242,7 @@ protected:
                 ubo.mMat = matrix[B0P0_x][B0P0_y];
             }
             else {
-                ubo.mMat = glm::translate(matrix[B0P0_x][B0P0_y], glm::vec3(0.0f, -100.0f, 0.0f));
+                ubo.mMat = glm::translate(matrix[B0P0_y][B0P0_x], glm::vec3(0.0f, -100.0f, 0.0f));
             }
 
             ubo.mvpMat = ViewPrj * ubo.mMat;
@@ -1254,10 +1252,10 @@ protected:
 
             // Update uniforms for the battleship
             if (B1P0Alive || B1P0Animated) {
-                ubo.mMat = matrix[B1P0_x][B1P0_y];
+                ubo.mMat = matrix[B1P0_y][B1P0_x];
             }
             else {
-                ubo.mMat = glm::translate(matrix[B1P0_x][B1P0_y], glm::vec3(0.0f, -100.0f, 0.0f));
+                ubo.mMat = glm::translate(matrix[B1P0_y][B1P0_x], glm::vec3(0.0f, -100.0f, 0.0f));
             }
 
             ubo.mvpMat = ViewPrj * ubo.mMat;
