@@ -511,14 +511,14 @@ protected:
         pubo.mMat[0] = glm::mat4(1.0f);
         pubo.nMat[0] = glm::inverse(glm::transpose(pubo.mMat[0]));
 
-        pubo.mMat[1] = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -195.0f));
+        pubo.mMat[1] = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -197.0f));
         pubo.nMat[1] = glm::inverse(glm::transpose(pubo.mMat[1]));
 
         // Update uniforms for the vertical plane
         Vpubo.mMat[0] = glm::mat4(1.0f) * glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
         Vpubo.nMat[0] = glm::inverse(glm::transpose(Vpubo.mMat[0]));
 
-        Vpubo.mMat[1] = glm::translate(glm::rotate(glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -1.0f)) * glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f)), glm::radians(180.0f), glm::vec3(0.0f, 1.0f, 0.0f)), glm::vec3(-194.0f, 0.0f, 0.0f));
+        Vpubo.mMat[1] = glm::translate(glm::rotate(glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -2.0f)) * glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f)), glm::radians(180.0f), glm::vec3(0.0f, 1.0f, 0.0f)), glm::vec3(-194.0f, 0.0f, 0.0f));
         Vpubo.nMat[1] = glm::inverse(glm::transpose(Vpubo.mMat[1]));
     }
 
