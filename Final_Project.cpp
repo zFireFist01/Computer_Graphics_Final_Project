@@ -552,6 +552,9 @@ protected:
             CamBeta = CamBeta < glm::radians(-90.0f) ? glm::radians(-90.0f) :
                 (CamBeta > glm::radians(90.0f) ? glm::radians(90.0f) : CamBeta);
 
+            // Clamp the vertical rotation (CamBeta) to avoid flipping
+            CamBeta = glm::clamp(CamBeta, glm::radians(-89.0f), glm::radians(89.0f));
+
             glm::vec3 ux = glm::rotate(glm::mat4(1.0f), CamAlpha, glm::vec3(0, 1, 0)) * glm::vec4(1, 0, 0, 1);
             glm::vec3 uz = glm::rotate(glm::mat4(1.0f), CamAlpha, glm::vec3(0, 1, 0)) * glm::vec4(0, 0, 1, 1);
             CamPos = CamPos - MOVE_SPEED * m.x * ux * deltaT;
