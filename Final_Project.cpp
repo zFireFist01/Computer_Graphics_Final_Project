@@ -68,6 +68,7 @@ struct TileUniformBufferObject {
     glm::mat4 mvpMat[NTILE];
     glm::mat4 mMat[NTILE];
     glm::mat4 nMat[NTILE];
+    glm::vec4 color[NTILE];
 };
 
 // The vertices data structures
@@ -89,7 +90,7 @@ protected:
 
     DescriptorSetLayout DSLskyBox;
     DescriptorSetLayout DSLPlane;
-    DescriptorSetLayout DSLMetallic;  
+    DescriptorSetLayout DSLMetallic;
     DescriptorSetLayout DSLTiles;
 
     // Vertex formats
@@ -312,7 +313,7 @@ protected:
         Mb0p1.init(this, &VDClassic, "models/Warships/Battleship.obj", OBJ);
         Mb1p1.init(this, &VDClassic, "models/Warships/Battleship.obj", OBJ);
         Mmissile.init(this, &VDClassic, "models/Missile/missile4.obj", OBJ);
-        MverticalPlane.init(this, &VDClassic, "models/VerticalPlane.obj", OBJ); 
+        MverticalPlane.init(this, &VDClassic, "models/VerticalPlane.obj", OBJ);
         MExplosionSphere.init(this, &VDClassic, "models/Sphere.obj", OBJ);
         Mtile.init(this, &VDClassic, "models/tile.obj", OBJ);
 
@@ -352,7 +353,7 @@ protected:
         for (int i = 0; i < 9; ++i) {
             for (int j = 0; j < 9; ++j) {
                 matrix[i][j] = glm::translate(glm::mat4(1.0f), glm::vec3(22.0f * (j - 4), 0.0f, 22.0f * (i - 4)));
-                matrixB[8-i][8-j] = glm::translate(glm::rotate(matrix[i][j], glm::radians(180.0f), glm::vec3(0.0f, 1.0f, 0.0f)),glm::vec3(0.0f, 0.0f, 193.0f)
+                matrixB[8 - i][8 - j] = glm::translate(glm::rotate(matrix[i][j], glm::radians(180.0f), glm::vec3(0.0f, 1.0f, 0.0f)), glm::vec3(0.0f, 0.0f, 193.0f)
                 );
             }
         }
@@ -563,9 +564,12 @@ protected:
         Vpubo.nMat[1] = glm::inverse(glm::transpose(Vpubo.mMat[1]));
 
         for (int i = 0; i < NTILE; i++) {
-            tubo.mMat[i] = glm::translate(glm::mat4(1.0f) * glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f)), glm::vec3(i* 10.0f, 0.0f, 0.0f));
+            tubo.mMat[i] = glm::translate(glm::mat4(1.0f) * glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f)), glm::vec3(i * 3.0f, 0.0f, 0.0f));
             tubo.nMat[i] = glm::inverse(glm::transpose(tubo.mMat[i]));
+            tubo.color[i] = glm::vec4(0.1f*i, 0.04f * i , 0.0f, 1.0f);
         }
+
+
     }
 
     // Here is where you update the uniforms.
