@@ -4,6 +4,7 @@
 #include "modules/TextMaker.hpp"
 
 #define NPLANE 2
+#define NTILE 162
 
 // The text to be displayed
 std::vector<SingleText> outText = {
@@ -62,6 +63,13 @@ struct skyBoxUniformBufferObject {
     glm::mat4 mvpMat;
 };
 
+// Tiles
+struct TileUniformBufferObject {
+    glm::mat4 mvpMat[NTILE];
+    glm::mat4 mMat[NTILE];
+    glm::mat4 nMat[NTILE];
+};
+
 // The vertices data structures
 struct skyBoxVertex {
     glm::vec3 pos;
@@ -82,6 +90,7 @@ protected:
     DescriptorSetLayout DSLskyBox;
     DescriptorSetLayout DSLPlane;
     DescriptorSetLayout DSLMetallic;  
+    DescriptorSetLayout DSLTiles;
 
     // Vertex formats
     VertexDescriptor VDskyBox;
@@ -93,6 +102,7 @@ protected:
     Pipeline PVerticalPlane;
     Pipeline PMetallic;
     Pipeline PExplosionSphere;
+    Pipeline PTiles;
 
     // Scenes and texts
     TextMaker txt;
@@ -134,10 +144,14 @@ protected:
     Texture TExplosionSphere;
     DescriptorSet DSExplosionSphere;
 
+    Model Mtile;
+    DescriptorSet DSTile;
+
     // Uniform Buffers di oggetti statici (vertical plane, plane, luci dentro gubo)
     GlobalUniformBufferObject gubo;
     PlaneUniformBufferObject pubo;
     PlaneUniformBufferObject Vpubo;
+    TileUniformBufferObject tubo;
 
     // Other application parameters
     int currScene = 0;
@@ -243,6 +257,11 @@ protected:
                     {1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 0, 1},
                     {2, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS, 1, 1}
             });
+        DSLTiles.init(this, {
+                    {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, sizeof(TileUniformBufferObject), 1},
+                    {1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 0, 1},
+                    {2, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS, 1, 1}
+            });
 
         // Vertex descriptors
         VDskyBox.init(this, {
@@ -283,6 +302,10 @@ protected:
         PExplosionSphere.setAdvancedFeatures(VK_COMPARE_OP_LESS_OR_EQUAL, VK_POLYGON_MODE_FILL,
             VK_CULL_MODE_BACK_BIT, false);
 
+        PTiles.init(this, &VDClassic, "shaders/TilesVert.spv", "shaders/VerticalPlaneFrag.spv", { &DSLGlobal, &DSLTiles });
+        PTiles.setAdvancedFeatures(VK_COMPARE_OP_LESS_OR_EQUAL, VK_POLYGON_MODE_FILL,
+            VK_CULL_MODE_BACK_BIT, false);
+
         // Create models
         MskyBox.init(this, &VDskyBox, "models/SkyBoxCube.obj", OBJ);
         MlargePlane.init(this, &VDClassic, "models/Water.obj", OBJ);
@@ -291,8 +314,9 @@ protected:
         Mb0p1.init(this, &VDClassic, "models/Warships/Battleship.obj", OBJ);
         Mb1p1.init(this, &VDClassic, "models/Warships/Battleship.obj", OBJ);
         Mmissile.init(this, &VDClassic, "models/Missile/missile4.obj", OBJ);
-        MverticalPlane.init(this, &VDClassic, "models/VerticalPlane.obj", OBJ);  // Inizializza il modello del piano verticale
+        MverticalPlane.init(this, &VDClassic, "models/VerticalPlane.obj", OBJ); 
         MExplosionSphere.init(this, &VDClassic, "models/Sphere.obj", OBJ);
+        Mtile.init(this, &VDClassic, "models/tile.obj", OBJ);
 
         // Create the textures
         TskyBox.init(this, "textures/cielo.jpg");
@@ -344,6 +368,7 @@ protected:
         PVerticalPlane.create();
         PMetallic.create();
         PExplosionSphere.create();
+        PTiles.create();
 
         // Here you define the data set
         DSskyBox.init(this, &DSLskyBox, { &TskyBox });
@@ -353,8 +378,9 @@ protected:
         DSb0p1.init(this, &DSLMetallic, { &Tbattleship });
         DSb1p1.init(this, &DSLMetallic, { &Tbattleship });
         DSmissile.init(this, &DSLMetallic, { &Tmissile });
-        DSVerticalPlane.init(this, &DSLPlane, { &TverticalPlane });  // Inizializza il descriptor set per il piano verticale con la sua texture
+        DSVerticalPlane.init(this, &DSLPlane, { &TverticalPlane });
         DSExplosionSphere.init(this, &DSLMetallic, { &TExplosionSphere });
+        DSTile.init(this, &DSLTiles, {});
 
         DSGlobal.init(this, &DSLGlobal, {});
 
@@ -370,6 +396,7 @@ protected:
         PVerticalPlane.cleanup();
         PMetallic.cleanup();
         PExplosionSphere.cleanup();
+        PTiles.cleanup();
 
         DSskyBox.cleanup();
         DSPlane.cleanup();
@@ -381,6 +408,7 @@ protected:
         DSGlobal.cleanup();
         DSVerticalPlane.cleanup();
         DSExplosionSphere.cleanup();
+        DSTile.cleanup();
 
         txt.pipelinesAndDescriptorSetsCleanup();
     }
@@ -411,11 +439,14 @@ protected:
         MExplosionSphere.cleanup();
         TExplosionSphere.cleanup();
 
+        Mtile.cleanup();
+
         // Cleanup descriptor set layouts
         DSLGlobal.cleanup();
         DSLskyBox.cleanup();
         DSLPlane.cleanup();
         DSLMetallic.cleanup();
+        DSLTiles.cleanup();
 
         // Destroies the pipelines
         PskyBox.destroy();
@@ -423,6 +454,7 @@ protected:
         PVerticalPlane.destroy();
         PMetallic.destroy();
         PExplosionSphere.destroy();
+        PTiles.destroy();
 
         txt.localCleanup();
     }
@@ -493,6 +525,12 @@ protected:
         DSExplosionSphere.bind(commandBuffer, PExplosionSphere, 0, currentImage);
         vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(MExplosionSphere.indices.size()), 1, 0, 0, 0);
 
+        PTiles.bind(commandBuffer);
+        Mtile.bind(commandBuffer);
+        DSGlobal.bind(commandBuffer, PTiles, 0, currentImage);
+        DSTile.bind(commandBuffer, PTiles, 1, currentImage);
+        vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(Mtile.indices.size()), NTILE, 0, 0, 0);
+
         txt.populateCommandBuffer(commandBuffer, currentImage, currScene);
 
         staticUniformBuffer(currentImage);
@@ -525,6 +563,11 @@ protected:
 
         Vpubo.mMat[1] = glm::translate(glm::rotate(glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -2.0f)) * glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f)), glm::radians(180.0f), glm::vec3(0.0f, 1.0f, 0.0f)), glm::vec3(-194.0f, 0.0f, 0.0f));
         Vpubo.nMat[1] = glm::inverse(glm::transpose(Vpubo.mMat[1]));
+
+        for (int i = 0; i < NTILE; i++) {
+            tubo.mMat[i] = glm::mat4(1.0f) * glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+            tubo.nMat[i] = glm::inverse(glm::transpose(tubo.mMat[i]));
+        }
     }
 
     // Here is where you update the uniforms.
@@ -599,6 +642,10 @@ protected:
         Vpubo.mvpMat[1] = ViewPrj * Vpubo.mMat[1];
 
         DSVerticalPlane.map(currentImage, &Vpubo, 0);
+
+        for (int i = 0; i < NTILE; i++) {
+            tubo.mvpMat[i] = ViewPrj * tubo.mMat[i];
+        }
 
         UniformBufferObject uboMissile{};
         UniformBufferObject uboExplosion{};
