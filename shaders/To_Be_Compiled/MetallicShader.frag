@@ -35,6 +35,7 @@ float roughness = 0.1;
 float k = 0.6; 
 float F0 = 0.91; 
 
+// GGX
 float ggx(vec3 n, vec3 v){
     float dotNV = max(dot(n,v), 0.0);
     float k = (roughness * roughness) / 2.0;
@@ -47,18 +48,19 @@ vec3 CookTorrance(vec3 lightColor, vec3 Norm, vec3 EyeDir, vec3 LD) {
     vec3 Diffuse;
     vec3 Specular;
 
-    // Lambert
     Diffuse = lightColor * max(dot(Norm, LD), 0.0f);
 
-    // Cook-Torrance
     vec3 halfVec = normalize(EyeDir + LD);
     //float NdotH = max(dot(Norm, halfVec), 0.0);
     float NdotV = max(dot(Norm, EyeDir), 0.0);
     //float NdotL = max(dot(Norm, LD), 0.0);
     float VdotH = max(dot(EyeDir, halfVec), 0.0);
 
+    // The Distribution term
     float D = (roughness * roughness) / (PI * pow( pow( dot(Norm, halfVec), 2) * (roughness * roughness - 1) + 1, 2));
+    // The Geometry term
     float G = ggx(Norm, EyeDir) * ggx(Norm, LD);
+    // The Fresnel term
     float F = F0 + (1.0 - F0) * pow(1.0 - VdotH, 5.0);
 
     Specular = lightColor * D * G * F / (4.0 * NdotV);

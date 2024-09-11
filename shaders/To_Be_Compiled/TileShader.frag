@@ -22,7 +22,9 @@ layout(set = 0, binding = 0) uniform GlobalUniformBufferObject {
 vec3 BRDF(vec3 Albedo, vec3 Norm, vec3 EyeDir, vec3 LD){
     vec3 Diffuse;
     vec3 Specular;
+    // Lambert
     Diffuse = Albedo * max(dot(Norm, LD), 0.0f);
+    // Phong
     Specular = vec3(pow(max(dot(EyeDir, -reflect(LD, Norm)), 0.0f), 160.0f));
 
     return Diffuse + 0.2 * Specular;
@@ -30,7 +32,6 @@ vec3 BRDF(vec3 Albedo, vec3 Norm, vec3 EyeDir, vec3 LD){
 
 
 void main() {
-
     vec3 lightColor[3];
     vec3 lightDir[3];
 
@@ -51,7 +52,7 @@ void main() {
     lightColor[2] = gubo.lightColor[2].rgb;
     RendEqSol += BRDF(fragColor.rgb, Norm, EyeDir, lightDir[2].xyz) * lightColor[2].xyz;
 
-
+    // Ambient Light
     vec3 Ambient = fragColor.rgb * 0.025f;
 
     RendEqSol += Ambient;

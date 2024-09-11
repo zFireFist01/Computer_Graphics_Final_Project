@@ -328,9 +328,9 @@ protected:
         // Descriptor pool sizes
         // WARNING!!!!!!!!
         // Must be set before initializing the text and the scene
-        DPSZs.uniformBlocksInPool = 200;
-        DPSZs.texturesInPool = 200;
-        DPSZs.setsInPool = 200;
+        DPSZs.uniformBlocksInPool = 20;
+        DPSZs.texturesInPool = 9;
+        DPSZs.setsInPool = 11;
 
         std::cout << "Initializing text\n";
         txt.init(this, &outText);
@@ -346,15 +346,12 @@ protected:
         CamAlpha = glm::atan(forward.x, forward.z);
         CamBeta = glm::asin(forward.y);
 
-        //glm::mat4(1.0f) traslata di 1.5 rispetto all'asse x è il centro della scacchiera
-        //Ogni elemento della colonna 5 ha una traslazione x di 1.5f
-        //Ogni elemento si muove a multipli di 21.3f rispetto alla z
-        // Ora costruiamo la scacchiera con le rispettive matrici
+
+        // Ora costruiamo la scacchiera con le rispettive matrici per le navi
         for (int i = 0; i < 9; ++i) {
             for (int j = 0; j < 9; ++j) {
                 matrix[i][j] = glm::translate(glm::mat4(1.0f), glm::vec3(22.0f * (j - 4), 0.0f, 22.0f * (i - 4)));
-                matrixB[8 - i][8 - j] = glm::translate(glm::rotate(matrix[i][j], glm::radians(180.0f), glm::vec3(0.0f, 1.0f, 0.0f)), glm::vec3(0.0f, 0.0f, 193.0f)
-                );
+                matrixB[8 - i][8 - j] = glm::translate(glm::rotate(matrix[i][j], glm::radians(180.0f), glm::vec3(0.0f, 1.0f, 0.0f)), glm::vec3(0.0f, 0.0f, 193.0f));
             }
         }
     }
@@ -379,7 +376,8 @@ protected:
         DSmissile.init(this, &DSLMetallic, { &Tmissile });
         DSVerticalPlane.init(this, &DSLPlane, { &TverticalPlane });
         DSExplosionSphere.init(this, &DSLMetallic, { &TExplosionSphere });
-        DSTile.init(this, &DSLTiles, {});
+
+        DSTile.init(this, &DSLTiles, {}); // No textures for the tiles we just need the color
 
         DSGlobal.init(this, &DSLGlobal, {});
 
@@ -462,9 +460,11 @@ protected:
     // You send to the GPU all the objects you want to draw,
     // with their buffers and textures
     void populateCommandBuffer(VkCommandBuffer commandBuffer, int currentImage) {
+        // SkyBox
         PskyBox.bind(commandBuffer);
         MskyBox.bind(commandBuffer);
         DSskyBox.bind(commandBuffer, PskyBox, 0, currentImage);
+        // Draw the skybox
         vkCmdDrawIndexed(commandBuffer,
             static_cast<uint32_t>(MskyBox.indices.size()), 1, 0, 0, 0);
 
@@ -484,50 +484,51 @@ protected:
         DSVerticalPlane.bind(commandBuffer, PVerticalPlane, 1, currentImage);
         vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(MverticalPlane.indices.size()), NPLANE, 0, 0, 0);
 
-        // Bind the pipeline for the battleship 
+        // Battleships and missile
         PMetallic.bind(commandBuffer);
         Mb0p0.bind(commandBuffer);
         DSGlobal.bind(commandBuffer, PMetallic, 0, currentImage);
         DSb0p0.bind(commandBuffer, PMetallic, 1, currentImage);
-        // Draw the battleship
+        // Draw the battleship 00
         vkCmdDrawIndexed(commandBuffer,
             static_cast<uint32_t>(Mb0p0.indices.size()), 1, 0, 0, 0);
 
-        // Bind the pipeline for the Smallbattleship
         Mb1p0.bind(commandBuffer);
         DSb1p0.bind(commandBuffer, PMetallic, 1, currentImage);
-        // Draw the battleship
+        // Draw the battleship 10
         vkCmdDrawIndexed(commandBuffer,
             static_cast<uint32_t>(Mb1p0.indices.size()), 1, 0, 0, 0);
 
-        // Bind the pipeline for the Smallbattleship
         Mb0p1.bind(commandBuffer);
         DSb0p1.bind(commandBuffer, PMetallic, 1, currentImage);
-        // Draw the battleship
+        // Draw the battleship 01
         vkCmdDrawIndexed(commandBuffer,
             static_cast<uint32_t>(Mb0p1.indices.size()), 1, 0, 0, 0);
 
-        // Bind the pipeline for the Smallbattleship
         Mb1p1.bind(commandBuffer);
         DSb1p1.bind(commandBuffer, PMetallic, 1, currentImage);
-        // Draw the battleship
+        // Draw the battleship 11
         vkCmdDrawIndexed(commandBuffer,
             static_cast<uint32_t>(Mb1p1.indices.size()), 1, 0, 0, 0);
 
-        //missile
         Mmissile.bind(commandBuffer);
         DSmissile.bind(commandBuffer, PMetallic, 1, currentImage);
+        // Draw the missile
         vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(Mmissile.indices.size()), 1, 0, 0, 0);
 
+        // Explosion sphere
         PExplosionSphere.bind(commandBuffer);
         MExplosionSphere.bind(commandBuffer);
         DSExplosionSphere.bind(commandBuffer, PExplosionSphere, 0, currentImage);
+        // Draw the explosion sphere
         vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(MExplosionSphere.indices.size()), 1, 0, 0, 0);
 
+        // Tiles
         PTiles.bind(commandBuffer);
         Mtile.bind(commandBuffer);
         DSGlobal.bind(commandBuffer, PTiles, 0, currentImage);
         DSTile.bind(commandBuffer, PTiles, 1, currentImage);
+        // Draw the tiles
         vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(Mtile.indices.size()), NTILE, 0, 0, 0);
 
         txt.populateCommandBuffer(commandBuffer, currentImage, currScene);
@@ -535,6 +536,7 @@ protected:
         staticUniformBuffer(currentImage);
     }
 
+    // Here you initialize all the uniforms that will be passed to the shaders for static objects
     void staticUniformBuffer(uint32_t currentImage) {
         //Point Light
         gubo.lightDir[0] = glm::vec4(cos(glm::radians(90.0f)), sin(glm::radians(90.0f)), 0.0f, 1.0f);
@@ -635,28 +637,26 @@ protected:
         glm::mat4 ViewPrj = M * Mv;
         glm::mat4 baseTr = glm::mat4(1.0f);
 
-
+        // Update uniforms for the Global
         gubo.eyePos = glm::vec4(CamPos, 1.0f);
-
-
         DSGlobal.map(currentImage, &gubo, 0);
 
         // Update uniforms for the plane
         pubo.mvpMat[0] = ViewPrj * pubo.mMat[0];
         pubo.mvpMat[1] = ViewPrj * pubo.mMat[1];
-
         DSPlane.map(currentImage, &pubo, 0);
 
+        // Update uniforms for the skybox
         skyBoxUniformBufferObject sbubo{};
         sbubo.mvpMat = M * glm::mat4(glm::mat3(Mv));
         DSskyBox.map(currentImage, &sbubo, 0);
 
-        //For the vertical plane
+        //update uniforms for the vertical plane
         Vpubo.mvpMat[0] = ViewPrj * Vpubo.mMat[0];
         Vpubo.mvpMat[1] = ViewPrj * Vpubo.mMat[1];
-
         DSVerticalPlane.map(currentImage, &Vpubo, 0);
 
+        // Update uniforms for the tiles
         for (int i = 0; i < NTILE; i++) {
             tubo.mvpMat[i] = ViewPrj * tubo.mMat[i];
         }
