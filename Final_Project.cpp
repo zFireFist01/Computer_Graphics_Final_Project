@@ -259,7 +259,7 @@ protected:
                     {2, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS, 1, 1}
             });
         DSLTiles.init(this, {
-                    {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, sizeof(TileUniformBufferObject), 1},
+                    {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, sizeof(TileUniformBufferObject), 1}
             });
 
         // Vertex descriptors
@@ -563,11 +563,23 @@ protected:
         Vpubo.mMat[1] = glm::translate(glm::rotate(glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -2.0f)) * glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f)), glm::radians(180.0f), glm::vec3(0.0f, 1.0f, 0.0f)), glm::vec3(-194.0f, 0.0f, 0.0f));
         Vpubo.nMat[1] = glm::inverse(glm::transpose(Vpubo.mMat[1]));
 
-        for (int i = 0; i < NTILE; i++) {
-            tubo.mMat[i] = glm::translate(glm::mat4(1.0f) * glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f)), glm::vec3(i * 3.0f, 0.0f, 0.0f));
-            tubo.nMat[i] = glm::inverse(glm::transpose(tubo.mMat[i]));
-            tubo.color[i] = glm::vec4(0.1f*i, 0.04f * i , 0.0f, 1.0f);
+        // Update uniforms for the Tiles
+        for (int i = 0; i < 9; i++) {
+            for( int j = 0; j < 9; j++){
+                tubo.mMat[i*9+j] = glm::translate(glm::mat4(1.0f) * glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f)), glm::vec3( 0.0f, i*-10.7f, j * -17.8f + 3.0f));
+                tubo.nMat[i*9+j] = glm::inverse(glm::transpose(tubo.mMat[i]));
+                tubo.color[i*9+j] = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
+            }
         }
+
+        for (int i = 0; i < 9; i++) {
+            for( int j = 0; j < 9; j++){
+                tubo.mMat[i*9+j + NTILE/2] = glm::translate(glm::mat4(1.0f) * glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f)), glm::vec3( 8.0f, i*-10.7f, j * -17.8f - 7.0f));
+                tubo.nMat[i*9+j + NTILE/2] = glm::inverse(glm::transpose(tubo.mMat[i]));
+                tubo.color[i*9+j + NTILE/2] = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
+            }
+        }
+
 
 
     }
