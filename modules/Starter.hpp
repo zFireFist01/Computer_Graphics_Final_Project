@@ -76,6 +76,7 @@ const std::vector<const char*> validationLayers = {
 	VK_KHR_SWAPCHAIN_EXTENSION_NAME
 };
 
+
 struct QueueFamilyIndices {
 	std::optional<uint32_t> graphicsFamily;
 	std::optional<uint32_t> presentFamily;
@@ -86,16 +87,19 @@ struct QueueFamilyIndices {
 	}
 };
 
+// la swapchain è una catena di immagini che vengono renderizzate e mostrate a schermo
 struct SwapChainSupportDetails {
 	VkSurfaceCapabilitiesKHR capabilities;
 	std::vector<VkSurfaceFormatKHR> formats;
 	std::vector<VkPresentModeKHR> presentModes;
 };
 
+// Fa partire il counter per calcolare fli fps
 void startFPSCounter() {
     start = std::chrono::high_resolution_clock::now();
 }
 
+// Calcola gli FPS e li stampa a video
 void endFPSCounter() {
     // Ottieni l'ora corrente
     end = std::chrono::high_resolution_clock::now();
@@ -138,6 +142,7 @@ void DestroyDebugUtilsMessengerEXT(VkInstance instance,
 	}
 }
 
+// Struct with different types of errors and their meanings
 struct errorcode {
 	VkResult resultCode;
 	std::string meaning;
@@ -171,6 +176,8 @@ ErrorCodes[ ] = {
 	{ VK_ERROR_INVALID_EXTERNAL_HANDLE, "Invalid External Handle" },
 
 };
+
+
 void PrintVkError( VkResult result ) {
 	const int numErrorCodes = sizeof( ErrorCodes ) / sizeof( struct errorcode );
 	std::string meaning = "";
@@ -226,6 +233,7 @@ struct VertexComponent {
 	uint32_t offset;
 };
 
+// Descrizione classe VertexDescriptor
 struct VertexDescriptor {
 	BaseProject *BP;
 	
@@ -246,8 +254,10 @@ struct VertexDescriptor {
 						getAttributeDescriptions();
 };
 
+//Types of Models available
 enum ModelType {OBJ, GLTF, MGCG};
 
+// Descrizione della classe Model
 class Model {
 	BaseProject *BP;
 	
@@ -272,6 +282,7 @@ class Model {
   	void bind(VkCommandBuffer commandBuffer);
 };
 
+// Descrzione della classe Texture
 struct Texture {
 	BaseProject *BP;
 	uint32_t mipLevels;
@@ -299,6 +310,7 @@ struct Texture {
 	void cleanup();
 };
 
+// Descrizione della classe DescriptorSetLayout
 struct DescriptorSetLayoutBinding {
 	uint32_t binding;
 	VkDescriptorType type;
@@ -318,6 +330,7 @@ struct DescriptorSetLayout {
 	void cleanup();
 };
 
+// Descrizione della classe Pipeline
 struct Pipeline {
 	BaseProject *BP;
 	VkPipeline graphicsPipeline;
@@ -347,6 +360,7 @@ struct Pipeline {
 	void cleanup();
 };
 
+//Descrizione della classe DescriptorSet
 struct DescriptorSet {
 	BaseProject *BP;
 
@@ -467,6 +481,7 @@ protected:
 	virtual void localInit() = 0;
 	virtual void pipelinesAndDescriptorSetsInit() = 0;
 
+	// Inizio di tutto
     void initVulkan() {
 		createInstance();				
 		setupDebugMessenger();			
@@ -706,6 +721,7 @@ std::cout << "Starting createInstance()\n"  << std::flush;
 		
 		std::cout << "Physical devices found: " << deviceCount << "\n";
 		
+		// Cerchiamo la scheda video migliore
 		for (const auto& device : devices) {
 			if(checkIfItHasDeviceExtension(device, "VK_KHR_portability_subset")) {
 				deviceExtensions.push_back("VK_KHR_portability_subset");
