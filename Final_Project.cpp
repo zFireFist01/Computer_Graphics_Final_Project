@@ -318,7 +318,7 @@ protected:
         Mtile.init(this, &VDClassic, "models/tile.obj", OBJ);
 
         // Create the textures
-        TskyBox.init(this, "textures/cielo.jpg");
+        TskyBox.init(this, "textures/starmap.jpg");
         TlargePlane.init(this, "textures/water_cropped_grid.jpg");
         Tbattleship.init(this, "textures/Metal.jpg");
         Tmissile.init(this, "textures/missile_texture.jpg");
