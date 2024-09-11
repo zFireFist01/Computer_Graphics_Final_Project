@@ -27,7 +27,7 @@ vec3 BRDF(vec3 Albedo, vec3 Norm, vec3 EyeDir, vec3 LD){
     Diffuse = Albedo * max(dot(Norm, LD), 0.0f);
     Specular = vec3(pow(max(dot(EyeDir, -reflect(LD, Norm)), 0.0f), 160.0f));
 
-    return Diffuse + 0.3 * Specular;
+    return Diffuse + 0.2 * Specular;
 }
 
 
