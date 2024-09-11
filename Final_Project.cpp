@@ -567,18 +567,16 @@ protected:
 
         // Update uniforms for the Tiles
         for (int i = 0; i < 9; i++) {
-            for( int j = 0; j < 9; j++){
-                tubo.mMat[i*9+j] = glm::translate(glm::mat4(1.0f) * glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f)), glm::vec3( 0.0f, i*-10.7f, j * -17.8f + 3.0f));
-                tubo.nMat[i*9+j] = glm::inverse(glm::transpose(tubo.mMat[i]));
-                tubo.color[i*9+j] = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
+            for (int j = 0; j < 9; j++) {
+                tubo.mMat[i * 9 + j] = glm::translate(glm::mat4(1.0f) * glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f)), glm::vec3(0.0f, i * -10.7f, j * -17.8f + 3.0f));
+                tubo.nMat[i * 9 + j] = glm::inverse(glm::transpose(tubo.mMat[i]));
             }
         }
 
         for (int i = 0; i < 9; i++) {
-            for( int j = 0; j < 9; j++){
-                tubo.mMat[i*9+j + NTILE/2] = glm::translate(glm::mat4(1.0f) * glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f)), glm::vec3( 8.0f, i*-10.7f, j * -17.8f - 7.0f));
-                tubo.nMat[i*9+j + NTILE/2] = glm::inverse(glm::transpose(tubo.mMat[i]));
-                tubo.color[i*9+j + NTILE/2] = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
+            for (int j = 0; j < 9; j++) {
+                tubo.mMat[i * 9 + j + NTILE / 2] = glm::translate(glm::mat4(1.0f) * glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f)), glm::vec3(8.0f, i * -10.7f, j * -17.8f - 7.0f));
+                tubo.nMat[i * 9 + j + NTILE / 2] = glm::inverse(glm::transpose(tubo.mMat[i]));
             }
         }
 
@@ -673,6 +671,9 @@ protected:
                         currScene = 0;
                         RebuildPipeline();
                         rebuild = false;
+                        for (int i = 0; i < NTILE; i++) {
+                            tubo.color[i] = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
+                        }
                     }
 
                     if (!debounce) {
@@ -1102,6 +1103,29 @@ protected:
             currScene = 12;
             RebuildPipeline();
 
+            if (currPlayer == 0) {
+                if (targetX == B0P1_x && targetY == B0P1_y) {
+                    tubo.color[(8-targetY) * 9 + targetX] = glm::vec4(253.0f, 0.0f, 0.0f, 1.0f);
+                }
+                else if (targetX == B1P1_x && targetY == B1P1_y) {
+                    tubo.color[(8 - targetY) * 9 + targetX] = glm::vec4(253.0f, 0.0f, 0.0f, 1.0f);
+                }
+                else {
+                    tubo.color[(8 - targetY) * 9 + targetX] = glm::vec4(0.0f, 0.0f, 0.255f, 1.0f);
+                }
+            }
+            else {
+                if (targetX == B0P0_x && targetY == B0P0_y) {
+                    tubo.color[(8 - targetY) * 9 + (8 - targetX) +81] = glm::vec4(253.0f, 0.0f, 0.0f, 1.0f);
+                }
+                else if (targetX == B1P0_x && targetY == B1P0_y) {
+                    tubo.color[(8 - targetY) * 9 + (8 - targetX) + 81] = glm::vec4(253.0f, 0.0f, 0.0f, 1.0f);
+                }
+                else {
+                    tubo.color[(8 - targetY) * 9 + (8 - targetX) + 81] = glm::vec4(0.0f, 0.0f, 0.255f, 1.0f);
+                }
+            }
+
             if (targetX != -1 && targetY != -1) {
                 missileTime = 0.0f;  // Reset the missile animation time
                 if (currPlayer == 0) {
@@ -1304,7 +1328,7 @@ protected:
         if (boatVisible) {
             // Update uniforms for the battleship
             if (B0P0Alive || B0P0Animated) {
-                ubo.mMat = matrix[B0P0_x][B0P0_y];
+                ubo.mMat = matrix[B0P0_y][B0P0_x];
             }
             else {
                 ubo.mMat = glm::translate(matrix[B0P0_y][B0P0_x], glm::vec3(0.0f, -100.0f, 0.0f));
@@ -1330,10 +1354,10 @@ protected:
 
             // TODO: mancano le battelship del giocatore 1 e vanno aggiunte mappandole sulla seconda tavola
             if (B0P1Alive || B0P1Animated) {
-                ubo.mMat = matrixB[B0P1_x][B0P1_y];
+                ubo.mMat = matrixB[B0P1_y][B0P1_x];
             }
             else {
-                ubo.mMat = glm::translate(matrixB[B0P1_x][B0P1_y], glm::vec3(0.0f, -100.0f, 0.0f));
+                ubo.mMat = glm::translate(matrixB[B0P1_y][B0P1_x], glm::vec3(0.0f, -100.0f, 0.0f));
             }
 
             ubo.mvpMat = ViewPrj * ubo.mMat;
@@ -1342,10 +1366,10 @@ protected:
             DSb0p1.map(currentImage, &ubo, 0);
 
             if (B1P1Alive || B1P1Animated) {
-                ubo.mMat = matrixB[B1P1_x][B1P1_y];
+                ubo.mMat = matrixB[B1P1_y][B1P1_x];
             }
             else {
-                ubo.mMat = glm::translate(matrixB[B1P1_x][B1P1_y], glm::vec3(0.0f, -100.0f, 0.0f));
+                ubo.mMat = glm::translate(matrixB[B1P1_y][B1P1_x], glm::vec3(0.0f, -100.0f, 0.0f));
             }
             ubo.mvpMat = ViewPrj * ubo.mMat;
             ubo.nMat = glm::inverse(glm::transpose(ubo.mMat));
